@@ -1,45 +1,41 @@
-def snitt(*args):
-    värden = [v for v in args if v > 0]
-    return sum(värden) / len(värden) if värden else 0
+def berakna_targetkurser(bolag):
+    # Säkerhetsmarginal
+    sm = 0.9
 
-def berakna_targetkurser(b):
-    snitt_pe = snitt(b["pe1"], b["pe2"], b["pe3"], b["pe4"])
-    snitt_ps = snitt(b["ps1"], b["ps2"], b["ps3"], b["ps4"])
+    # Undvik division med noll
+    if bolag["nuvarande_pe"] == 0 or bolag["nuvarande_ps"] == 0:
+        return {}
 
-    säkerhetsmarginal = 0.9  # 10% säkerhetsmarginal
+    # Snittvärden
+    snitt_pe = sum([bolag.get(f"pe{i}", 0) for i in range(1, 5)]) / 4
+    snitt_ps = sum([bolag.get(f"ps{i}", 0) for i in range(1, 5)]) / 4
 
-    # Targetkurs P/E
-    target_pe_i_ar = snitt_pe * b["vinst_i_ar"] * säkerhetsmarginal
-    target_pe_nastaar = snitt_pe * b["vinst_nastaar"] * säkerhetsmarginal
+    # Targetkurser P/E
+    target_pe_iar = snitt_pe * bolag["vinst_iar"] * sm
+    target_pe_nastaar = snitt_pe * bolag["vinst_nastaar"] * sm
 
-    # Targetkurs P/S
-    try:
-        ps_factor_i_ar = (snitt_ps * (b["tillvaxt_i_ar"] / 100)) / b["nuvarande_ps"]
-        target_ps_i_ar = ps_factor_i_ar * b["nuvarande_kurs"] * säkerhetsmarginal
-    except ZeroDivisionError:
-        target_ps_i_ar = 0
+    # Targetkurser P/S
+    oms_tillv_iar_faktor = bolag["oms_tillv_iar"] / 100
+    oms_tillv_nastaar_faktor = bolag["oms_tillv_nastaar"] / 100
 
-    try:
-        ps_factor_nastaar = (snitt_ps * (b["tillvaxt_i_ar"] / 100) * (b["tillvaxt_nastaar"] / 100)) / b["nuvarande_ps"]
-        target_ps_nastaar = ps_factor_nastaar * b["nuvarande_kurs"] * säkerhetsmarginal
-    except ZeroDivisionError:
-        target_ps_nastaar = 0
+    target_ps_iar = (snitt_ps * oms_tillv_iar_faktor / bolag["nuvarande_ps"]) * bolag["nuvarande_kurs"] * sm
+    target_ps_nastaar = (snitt_ps * oms_tillv_iar_faktor * oms_tillv_nastaar_faktor / bolag["nuvarande_ps"]) * bolag["nuvarande_kurs"] * sm
 
-    # Undervärdering
-    max_target = max(target_pe_i_ar, target_pe_nastaar, target_ps_i_ar, target_ps_nastaar)
-    if b["nuvarande_kurs"] > 0:
-        undervardering_pct = round(((max_target - b["nuvarande_kurs"]) / b["nuvarande_kurs"]) * 100, 1)
-    else:
-        undervardering_pct = 0
+    # Undervärdering P/E och P/S (nästa år)
+    undervardering_pe_pct = (target_pe_nastaar - bolag["nuvarande_kurs"]) / bolag["nuvarande_kurs"] * 100
+    undervardering_ps_pct = (target_ps_nastaar - bolag["nuvarande_kurs"]) / bolag["nuvarande_kurs"] * 100
 
-    # Köpvärd nivå (targetkurs -30%)
-    köp_nivå = round(max_target * 0.7, 2)
+    # Köpvärd nivå (30 % rabatt)
+    kopvard_pe = target_pe_nastaar * 0.7
+    kopvard_ps = target_ps_nastaar * 0.7
 
     return {
-        "target_pe_i_ar": round(target_pe_i_ar, 2),
+        "target_pe_iar": round(target_pe_iar, 2),
         "target_pe_nastaar": round(target_pe_nastaar, 2),
-        "target_ps_i_ar": round(target_ps_i_ar, 2),
+        "target_ps_iar": round(target_ps_iar, 2),
         "target_ps_nastaar": round(target_ps_nastaar, 2),
-        "undervardering_pct": undervardering_pct,
-        "kopvarde_niva": köp_nivå
+        "undervardering_pe_pct": round(undervardering_pe_pct, 1),
+        "undervardering_ps_pct": round(undervardering_ps_pct, 1),
+        "kopvard_pe": round(kopvard_pe, 2),
+        "kopvard_ps": round(kopvard_ps, 2)
     }
