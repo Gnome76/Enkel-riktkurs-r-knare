@@ -1,54 +1,60 @@
+def medelvärde(lista):
+    if not lista:
+        return 0
+    return sum(lista) / len(lista)
+
 def berakna_targetkurser(bolag):
-    """
-    Beräknar targetkurser och undervärdering för ett bolag baserat på angivna nyckeltal.
-    Modifierar och returnerar bolaget med nya fält.
-    """
+    # Säkerhetsmarginal 10 %
+    säkerhet = 0.9
 
-    säkerhetsmarginal = 0.9  # 10% säkerhetsmarginal
+    # Snitt P/E 1-4
+    pe_värden = [bolag.get(f"pe_{i}", 0) for i in range(1, 5)]
+    pe_snitt = medelvärde(pe_värden)
 
-    # Medelvärden P/E och P/S
-    pe_medel = sum([bolag.get(f"pe{i}", 0) for i in range(1, 5)]) / 4
-    ps_medel = sum([bolag.get(f"ps{i}", 0) for i in range(1, 5)]) / 4
+    # Snitt P/S 1-4
+    ps_värden = [bolag.get(f"ps_{i}", 0) for i in range(1, 5)]
+    ps_snitt = medelvärde(ps_värden)
 
-    # Targetkurs P/E
-    try:
-        bolag["target_pe_aar"] = round(pe_medel * bolag["vinst_aar"] * säkerhetsmarginal, 2)
-    except:
-        bolag["target_pe_aar"] = 0.0
+    # Omvandla procent till decimal
+    tillväxt_iår = bolag.get("tillväxt_iår", 0) / 100
+    tillväxt_nästa_år = bolag.get("tillväxt_nästa_år", 0) / 100
 
-    try:
-        bolag["target_pe_nasta_aar"] = round(pe_medel * bolag["vinst_nasta_aar"] * säkerhetsmarginal, 2)
-    except:
-        bolag["target_pe_nasta_aar"] = 0.0
+    # Beräkningar targetkurs P/E
+    target_pe_iår = pe_snitt * bolag.get("vinst_år", 0) * säkerhet
+    target_pe_nästa_år = pe_snitt * bolag.get("vinst_nästa_år", 0) * säkerhet
 
-    # Targetkurs P/S
-    try:
-        tillvaxt_aar = bolag["omsattningstillvaxt_aar"]
-        bolag["target_ps_aar"] = round((ps_medel * tillvaxt_aar / bolag["nuvarande_ps"]) * bolag["nuvarande_kurs"] * säkerhetsmarginal, 2)
-    except:
-        bolag["target_ps_aar"] = 0.0
+    # Beräkningar targetkurs P/S
+    nuvarande_ps = bolag.get("nuvarande_ps", 1) or 1  # undvik division med 0
+    nuvarande_kurs = bolag.get("nuvarande_kurs", 0)
 
-    try:
-        tillvaxt_total = bolag["omsattningstillvaxt_aar"] * bolag["omsattningstillvaxt_nasta_aar"]
-        bolag["target_ps_nasta_aar"] = round((ps_medel * tillvaxt_total / bolag["nuvarande_ps"]) * bolag["nuvarande_kurs"] * säkerhetsmarginal, 2)
-    except:
-        bolag["target_ps_nasta_aar"] = 0.0
+    target_ps_iår = ps_snitt * (tillväxt_iår / nuvarande_ps) * nuvarande_kurs * säkerhet
+    target_ps_nästa_år = ps_snitt * ((tillväxt_iår * tillväxt_nästa_år) / nuvarande_ps) * nuvarande_kurs * säkerhet
 
-    # Undervärdering
-    try:
-        underv_pe = (bolag["target_pe_nasta_aar"] / bolag["nuvarande_kurs"]) - 1
-    except:
-        underv_pe = 0.0
+    # Undervärdering i %
+    undervärdering_pe = 100 * (target_pe_nästa_år - nuvarande_kurs) / nuvarande_kurs if nuvarande_kurs else 0
+    undervärdering_ps = 100 * (target_ps_nästa_år - nuvarande_kurs) / nuvarande_kurs if nuvarande_kurs else 0
 
-    try:
-        underv_ps = (bolag["target_ps_nasta_aar"] / bolag["nuvarande_kurs"]) - 1
-    except:
-        underv_ps = 0.0
+    # Köpvärd nivå (30% rabatt)
+    köp_pe = target_pe_nästa_år * 0.7
+    köp_ps = target_ps_nästa_år * 0.7
 
-    bolag["undervardering_pct"] = round(max(underv_pe, underv_ps) * 100, 1)  # Mest fördelaktiga
+    return {
+        "target_pe_iår": target_pe_iår,
+        "target_pe_nästa_år": target_pe_nästa_år,
+        "target_ps_iår": target_ps_iår,
+        "target_ps_nästa_år": target_ps_nästa_år,
+        "undervardering_pe_pct": undervärdering_pe,
+        "undervardering_ps_pct": undervärdering_ps,
+        "köpvärd_pe": köp_pe,
+        "köpvärd_ps": köp_ps,
+    }
 
-    # Köpvärd nivå (30% rabatt från target)
-    bolag["koptillfalle_pe"] = round(bolag["target_pe_nasta_aar"] * 0.7, 2)
-    bolag["koptillfalle_ps"] = round(bolag["target_ps_nasta_aar"] * 0.7, 2)
-
-    return bolag
+def filtrera_undervarderade(bolag_list, procent_grans=30):
+    """Returnerar bolag som är undervärderade med minst procent_grans enligt target P/E nästa år"""
+    undervarderade = [
+        b for b in bolag_list
+        if b.get("undervardering_pe_pct", 0) >= procent_grans
+    ]
+    # Sortera efter mest undervärderade först (högst procentsats)
+    undervarderade.sort(key=lambda b: b.get("undervardering_pe_pct", 0), reverse=True)
+    return undervarderade
