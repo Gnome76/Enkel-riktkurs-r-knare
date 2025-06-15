@@ -1,122 +1,71 @@
 import streamlit as st
-from data_handler import load_data, save_data
-from forms import visa_inmatningsform, visa_redigeringsform
-import datetime
+from forms import visa_inmatningsform
+from utils import berakna_targetkurser, filtrera_undervarderade
+from data_handler import las_data, spara_data
 
-st.set_page_config(page_title="Aktieanalysapp", layout="wide")
+def main():
+    st.title("Aktieanalys – Undervärdering P/E & P/S")
 
-def snittvärde(values):
-    vals = [v for v in values if v and v > 0]
-    return sum(vals) / len(vals) if vals else 0
+    # Ladda bolagsdata från JSON
+    bolag_list = las_data()
 
-def beräkna_targetkurser(bolag):
-    säkerhetsmarginal = 0.9
-    pe_values = [bolag.get(f"pe_{i}", 0) or 0 for i in range(1,5)]
-    ps_values = [bolag.get(f"ps_{i}", 0) or 0 for i in range(1,5)]
-    snitt_pe = snittvärde(pe_values)
-    snitt_ps = snittvärde(ps_values)
+    # Visa formulär för nytt bolag
+    nytt_bolag = visa_inmatningsform()
+    if nytt_bolag:
+        # Beräkna targetkurser och undervärdering
+        berakna_targetkurser(nytt_bolag)
+        bolag_list.append(nytt_bolag)
+        spara_data(bolag_list)
+        st.success(f"Bolaget '{nytt_bolag['namn']}' har lagts till.")
 
-    vinst_i_ar = bolag.get("vinst_i_ar", 0) or 0
-    vinst_nasta_ar = bolag.get("vinst_nasta_ar", 0) or 0
-    oms_tillvaxt_i_ar = (bolag.get("oms_tillvaxt_i_ar", 0) or 0) / 100
-    oms_tillvaxt_nasta_ar = (bolag.get("oms_tillvaxt_nasta_ar", 0) or 0) / 100
-    nuvarande_kurs = bolag.get("nuvarande_kurs", 0) or 0
-    nuvarande_ps = bolag.get("nuvarande_ps", 1) or 1
-    if nuvarande_ps <= 0:
-        nuvarande_ps = 1
+    # Beräkna targetkurser för alla bolag (för säkerhets skull)
+    for bolag in bolag_list:
+        berakna_targetkurser(bolag)
 
-    return {
-        "target_pe_idag": snitt_pe * vinst_i_ar * säkerhetsmarginal,
-        "target_pe_nasta": snitt_pe * vinst_nasta_ar * säkerhetsmarginal,
-        "target_ps_idag": snitt_ps * (oms_tillvaxt_i_ar / nuvarande_ps) * nuvarande_kurs * säkerhetsmarginal,
-        "target_ps_nasta": snitt_ps * ((oms_tillvaxt_i_ar * oms_tillvaxt_nasta_ar) / nuvarande_ps) * nuvarande_kurs * säkerhetsmarginal
-    }
+    # Checkbox för filtrering undervärderade bolag
+    visa_endast_undervarderade = st.checkbox("Visa endast undervärderade (≥30%)")
 
-def beräkna_undervardering(targetkurs, nuvarande_kurs):
-    return (targetkurs - nuvarande_kurs) / nuvarande_kurs * 100 if nuvarande_kurs else 0
+    # Filtrera om valt
+    att_visas = (
+        filtrera_undervarderade(bolag_list, 30)
+        if visa_endast_undervarderade
+        else bolag_list
+    )
 
-def beräkna_kopvard_niva(targetkurs):
-    return targetkurs * 0.7
+    if not att_visas:
+        st.info("Inga bolag att visa.")
+        return
 
-if "bolag_data" not in st.session_state:
-    st.session_state.bolag_data = load_data()
+    # Visa bolagslista i tabell
+    import pandas as pd
 
-if "current_index" not in st.session_state:
-    st.session_state.current_index = 0
+    df = pd.DataFrame(att_visas)
 
-if "refresh" not in st.session_state:
-    st.session_state["refresh"] = False
+    # Välj kolumner att visa och formatera undervärderingsprocent
+    kolumner = [
+        "namn",
+        "nuvarande_kurs",
+        "target_pe_iår",
+        "target_pe_nästa_år",
+        "target_ps_iår",
+        "target_ps_nästa_år",
+        "undervardering_pe_pct",
+        "undervardering_ps_pct",
+        "köpvärd_pe",
+        "köpvärd_ps",
+    ]
+    df_vis = df[kolumner].copy()
+    df_vis["undervardering_pe_pct"] = df_vis["undervardering_pe_pct"].map("{:.1f}%".format)
+    df_vis["undervardering_ps_pct"] = df_vis["undervardering_ps_pct"].map("{:.1f}%".format)
+    df_vis["nuvarande_kurs"] = df_vis["nuvarande_kurs"].map("{:.2f}".format)
+    df_vis["target_pe_iår"] = df_vis["target_pe_iår"].map("{:.2f}".format)
+    df_vis["target_pe_nästa_år"] = df_vis["target_pe_nästa_år"].map("{:.2f}".format)
+    df_vis["target_ps_iår"] = df_vis["target_ps_iår"].map("{:.2f}".format)
+    df_vis["target_ps_nästa_år"] = df_vis["target_ps_nästa_år"].map("{:.2f}".format)
+    df_vis["köpvärd_pe"] = df_vis["köpvärd_pe"].map("{:.2f}".format)
+    df_vis["köpvärd_ps"] = df_vis["köpvärd_ps"].map("{:.2f}".format)
 
-if st.session_state["refresh"]:
-    st.session_state["refresh"] = False
-    st.experimental_rerun()
+    st.dataframe(df_vis.style.set_properties(**{"text-align": "center"}))
 
-st.title("Aktieanalysapp")
-st.header("Lägg till nytt bolag")
-
-nytt_bolag = visa_inmatningsform()
-if nytt_bolag:
-    nytt_bolag["insatt_datum"] = datetime.datetime.now().isoformat()
-    st.session_state.bolag_data.append(nytt_bolag)
-    save_data(st.session_state.bolag_data)
-    st.success(f"Bolag '{nytt_bolag['namn']}' tillagt!")
-    st.session_state.current_index = len(st.session_state.bolag_data) - 1
-
-st.header("Bolagsöversikt")
-
-visa_alla = st.checkbox("Visa alla bolag (inte bara undervärderade)", value=False)
-
-for b in st.session_state.bolag_data:
-    targets = beräkna_targetkurser(b)
-    b.update(targets)
-    b["undervardering_pe_idag"] = beräkna_undervardering(b["target_pe_idag"], b.get("nuvarande_kurs", 0))
-    b["undervardering_pe_nasta"] = beräkna_undervardering(b["target_pe_nasta"], b.get("nuvarande_kurs", 0))
-    b["undervardering_ps_idag"] = beräkna_undervardering(b["target_ps_idag"], b.get("nuvarande_kurs", 0))
-    b["undervardering_ps_nasta"] = beräkna_undervardering(b["target_ps_nasta"], b.get("nuvarande_kurs", 0))
-
-visade_bolag = st.session_state.bolag_data if visa_alla else [b for b in st.session_state.bolag_data if b["undervardering_pe_nasta"] > 0]
-visade_bolag.sort(key=lambda x: x["undervardering_pe_nasta"], reverse=True)
-
-if not visade_bolag:
-    st.info("Inga bolag att visa enligt vald filter.")
-else:
-    col1, col2, col3 = st.columns([1, 3, 1])
-    with col1:
-        if st.button("⬅️ Föregående", key="prev"):
-            st.session_state.current_index = max(0, st.session_state.current_index - 1)
-    with col3:
-        if st.button("Nästa ➡️", key="next"):
-            st.session_state.current_index = min(len(visade_bolag) - 1, st.session_state.current_index + 1)
-
-    st.session_state.current_index = max(0, min(st.session_state.current_index, len(visade_bolag) - 1))
-    current_bolag = visade_bolag[st.session_state.current_index]
-
-    st.subheader(current_bolag['namn'])
-    st.markdown(f"**Nuvarande kurs:** {current_bolag['nuvarande_kurs']:.2f} SEK")
-    st.markdown(f"**Targetkurs P/E idag:** {current_bolag['target_pe_idag']:.2f}")
-    st.markdown(f"**Targetkurs P/E nästa år:** {current_bolag['target_pe_nasta']:.2f}")
-    st.markdown(f"**Targetkurs P/S idag:** {current_bolag['target_ps_idag']:.2f}")
-    st.markdown(f"**Targetkurs P/S nästa år:** {current_bolag['target_ps_nasta']:.2f}")
-    st.markdown(f"**Undervärdering P/E nästa år:** {current_bolag['undervardering_pe_nasta']:.2f}%")
-    st.markdown(f"**Köpvärd nivå (30% rabatt):** {beräkna_kopvard_niva(current_bolag['target_pe_nasta']):.2f} SEK")
-
-    st.subheader("Redigera bolag")
-    uppdaterad = visa_redigeringsform(current_bolag)
-    if uppdaterad:
-        uppdaterad["insatt_datum"] = current_bolag.get("insatt_datum")
-        uppdaterad["senast_andrad"] = datetime.datetime.now().isoformat()
-        idx = st.session_state.bolag_data.index(current_bolag)
-        st.session_state.bolag_data[idx] = uppdaterad
-        save_data(st.session_state.bolag_data)
-        st.success("Bolaget uppdaterades!")
-        st.session_state["refresh"] = True
-        st.stop()
-
-    if st.button("Ta bort bolag", key=f"ta_bort_{current_bolag['namn']}"):
-        idx = st.session_state.bolag_data.index(current_bolag)
-        st.session_state.bolag_data.pop(idx)
-        save_data(st.session_state.bolag_data)
-        st.success("Bolaget togs bort!")
-        st.session_state.current_index = max(0, st.session_state.current_index - 1)
-        st.session_state["refresh"] = True
-        st.stop()
+if __name__ == "__main__":
+    main()
