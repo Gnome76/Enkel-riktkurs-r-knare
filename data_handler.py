@@ -1,37 +1,28 @@
 import json
 import os
+from utils import berakna_targetkurser
 
-DATA_FIL = "bolag_data.json"
+DATAFIL = "bolag_data.json"
 
-def load_data():
-    """Ladda bolagsdata från JSON-fil. Returnerar lista av dicts."""
-    if not os.path.exists(DATA_FIL):
+def ladda_data():
+    if not os.path.exists(DATAFIL):
         return []
-    with open(DATA_FIL, "r", encoding="utf-8") as f:
-        try:
-            data = json.load(f)
-        except json.JSONDecodeError:
-            data = []
+
+    with open(DATAFIL, "r") as f:
+        data = json.load(f)
+
+    # Uppdatera varje bolag med nya beräkningar
+    for bolag in data:
+        result = berakna_targetkurser(bolag)
+        bolag.update(result)
+
     return data
 
-def save_data(data):
-    """Spara bolagsdata till JSON-fil."""
-    with open(DATA_FIL, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+def spara_data(data):
+    # Uppdatera varje bolag med nya beräkningar innan det sparas
+    for bolag in data:
+        result = berakna_targetkurser(bolag)
+        bolag.update(result)
 
-def add_bolag(bolag_list, nytt_bolag):
-    """Lägg till nytt bolag i listan och spara."""
-    bolag_list.append(nytt_bolag)
-    save_data(bolag_list)
-
-def update_bolag(bolag_list, index, uppdaterat_bolag):
-    """Uppdatera bolag på angiven index och spara."""
-    if 0 <= index < len(bolag_list):
-        bolag_list[index] = uppdaterat_bolag
-        save_data(bolag_list)
-
-def remove_bolag(bolag_list, index):
-    """Ta bort bolag på angiven index och spara."""
-    if 0 <= index < len(bolag_list):
-        bolag_list.pop(index)
-        save_data(bolag_list)
+    with open(DATAFIL, "w") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
