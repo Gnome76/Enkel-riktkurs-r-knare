@@ -1,43 +1,57 @@
 import streamlit as st
-from utils import berakna_targetkurser
-from data_handler import save_data
 
-def visa_inmatningsform(data):
-    st.header("📋 Hantera bolag")
+def bolag_form(bolag=None, key_prefix="nytt"):
+    """
+    Visar ett formulär för att lägga till eller redigera ett bolag.
 
-    bolagsnamn_lista = [b["namn"] for b in data]
-    valt_bolag = st.selectbox("Välj bolag att redigera eller ta bort", options=[""] + bolagsnamn_lista)
+    :param bolag: dict med befintliga data för redigering, eller None för nytt bolag
+    :param key_prefix: prefix för Streamlit form keys för att undvika krockar
+    :return: dict med ifylld data eller None om formuläret inte skickades
+    """
+    with st.form(key=f"{key_prefix}_form"):
+        namn = st.text_input("Bolagsnamn", value=bolag.get("namn") if bolag else "", key=f"{key_prefix}_namn")
+        nuvarande_kurs = st.number_input("Nuvarande kurs", min_value=0.0, format="%.2f",
+                                         value=bolag.get("nuvarande_kurs", 0.0) if bolag else 0.0, key=f"{key_prefix}_nuvarande_kurs")
+        
+        # P/E
+        nuvarande_pe = st.number_input("Nuvarande P/E", min_value=0.0, format="%.2f",
+                                      value=bolag.get("nuvarande_pe", 0.0) if bolag else 0.0, key=f"{key_prefix}_nuvarande_pe")
+        pe1 = st.number_input("P/E 1", min_value=0.0, format="%.2f",
+                              value=bolag.get("pe1", 0.0) if bolag else 0.0, key=f"{key_prefix}_pe1")
+        pe2 = st.number_input("P/E 2", min_value=0.0, format="%.2f",
+                              value=bolag.get("pe2", 0.0) if bolag else 0.0, key=f"{key_prefix}_pe2")
+        pe3 = st.number_input("P/E 3", min_value=0.0, format="%.2f",
+                              value=bolag.get("pe3", 0.0) if bolag else 0.0, key=f"{key_prefix}_pe3")
+        pe4 = st.number_input("P/E 4", min_value=0.0, format="%.2f",
+                              value=bolag.get("pe4", 0.0) if bolag else 0.0, key=f"{key_prefix}_pe4")
 
-    if valt_bolag and valt_bolag in bolagsnamn_lista:
-        befintligt = next(b for b in data if b["namn"] == valt_bolag)
-    else:
-        befintligt = {}
+        # P/S
+        nuvarande_ps = st.number_input("Nuvarande P/S", min_value=0.0, format="%.2f",
+                                      value=bolag.get("nuvarande_ps", 0.0) if bolag else 0.0, key=f"{key_prefix}_nuvarande_ps")
+        ps1 = st.number_input("P/S 1", min_value=0.0, format="%.2f",
+                              value=bolag.get("ps1", 0.0) if bolag else 0.0, key=f"{key_prefix}_ps1")
+        ps2 = st.number_input("P/S 2", min_value=0.0, format="%.2f",
+                              value=bolag.get("ps2", 0.0) if bolag else 0.0, key=f"{key_prefix}_ps2")
+        ps3 = st.number_input("P/S 3", min_value=0.0, format="%.2f",
+                              value=bolag.get("ps3", 0.0) if bolag else 0.0, key=f"{key_prefix}_ps3")
+        ps4 = st.number_input("P/S 4", min_value=0.0, format="%.2f",
+                              value=bolag.get("ps4", 0.0) if bolag else 0.0, key=f"{key_prefix}_ps4")
 
-    with st.form(key="inmatning_form"):
-        namn = st.text_input("Bolagsnamn", value=befintligt.get("namn", ""))
-        nuvarande_kurs = st.number_input("Nuvarande kurs", value=befintligt.get("nuvarande_kurs", 0.0))
-        nuvarande_pe = st.number_input("Nuvarande P/E", value=befintligt.get("nuvarande_pe", 0.0))
-        pe1 = st.number_input("P/E 1", value=befintligt.get("pe1", 0.0))
-        pe2 = st.number_input("P/E 2", value=befintligt.get("pe2", 0.0))
-        pe3 = st.number_input("P/E 3", value=befintligt.get("pe3", 0.0))
-        pe4 = st.number_input("P/E 4", value=befintligt.get("pe4", 0.0))
+        # Vinst och omsättningstillväxt
+        vinst_aar = st.number_input("Förväntad vinst i år", format="%.2f",
+                                   value=bolag.get("vinst_aar", 0.0) if bolag else 0.0, key=f"{key_prefix}_vinst_aar")
+        vinst_nasta_aar = st.number_input("Förväntad vinst nästa år", format="%.2f",
+                                          value=bolag.get("vinst_nasta_aar", 0.0) if bolag else 0.0, key=f"{key_prefix}_vinst_nasta_aar")
+        omsattningstillvaxt_aar = st.number_input("Omsättningstillväxt i år (%)", format="%.2f",
+                                                  value=bolag.get("omsattningstillvaxt_aar", 0.0) if bolag else 0.0, key=f"{key_prefix}_omsattningstillvaxt_aar")
+        omsattningstillvaxt_nasta_aar = st.number_input("Omsättningstillväxt nästa år (%)", format="%.2f",
+                                                       value=bolag.get("omsattningstillvaxt_nasta_aar", 0.0) if bolag else 0.0, key=f"{key_prefix}_omsattningstillvaxt_nasta_aar")
 
-        nuvarande_ps = st.number_input("Nuvarande P/S", value=befintligt.get("nuvarande_ps", 0.0))
-        ps1 = st.number_input("P/S 1", value=befintligt.get("ps1", 0.0))
-        ps2 = st.number_input("P/S 2", value=befintligt.get("ps2", 0.0))
-        ps3 = st.number_input("P/S 3", value=befintligt.get("ps3", 0.0))
-        ps4 = st.number_input("P/S 4", value=befintligt.get("ps4", 0.0))
-
-        vinst_iar = st.number_input("Förväntad vinst i år", value=befintligt.get("vinst_iar", 0.0))
-        vinst_nastaar = st.number_input("Förväntad vinst nästa år", value=befintligt.get("vinst_nastaar", 0.0))
-        oms_tillv_iar = st.number_input("Omsättningstillväxt i år (%)", value=befintligt.get("oms_tillv_iar", 0.0))
-        oms_tillv_nastaar = st.number_input("Omsättningstillväxt nästa år (%)", value=befintligt.get("oms_tillv_nastaar", 0.0))
-
-        submit = st.form_submit_button("💾 Spara bolag")
+        submit = st.form_submit_button("Spara")
 
     if submit:
-        nytt_bolag = {
-            "namn": namn,
+        return {
+            "namn": namn.strip(),
             "nuvarande_kurs": nuvarande_kurs,
             "nuvarande_pe": nuvarande_pe,
             "pe1": pe1,
@@ -49,26 +63,9 @@ def visa_inmatningsform(data):
             "ps2": ps2,
             "ps3": ps3,
             "ps4": ps4,
-            "vinst_iar": vinst_iar,
-            "vinst_nastaar": vinst_nastaar,
-            "oms_tillv_iar": oms_tillv_iar,
-            "oms_tillv_nastaar": oms_tillv_nastaar
+            "vinst_aar": vinst_aar,
+            "vinst_nasta_aar": vinst_nasta_aar,
+            "omsattningstillvaxt_aar": omsattningstillvaxt_aar / 100,  # procentsats till decimal
+            "omsattningstillvaxt_nasta_aar": omsattningstillvaxt_nasta_aar / 100,  # procentsats till decimal
         }
-
-        nytt_bolag.update(berakna_targetkurser(nytt_bolag))
-
-        # Uppdatera eller lägg till
-        data = [b for b in data if b["namn"] != namn]
-        data.append(nytt_bolag)
-        save_data(data)
-
-        st.success(f"{namn} har sparats.")
-        st.experimental_rerun()
-
-    # Funktion för att ta bort bolag
-    if valt_bolag and valt_bolag in bolagsnamn_lista:
-        if st.button(f"🗑️ Ta bort '{valt_bolag}' permanent"):
-            data = [b for b in data if b["namn"] != valt_bolag]
-            save_data(data)
-            st.success(f"{valt_bolag} har tagits bort.")
-            st.experimental_rerun()
+    return None
