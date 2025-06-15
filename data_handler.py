@@ -1,37 +1,44 @@
 import json
 import os
 from datetime import datetime
+from utils import berakna_targetkurser
 
 DATAFIL = "bolag_data.json"
 
-def las_bolag():
+def las_data():
     if os.path.exists(DATAFIL):
-        with open(DATAFIL, "r", encoding="utf-8") as f:
+        with open(DATAFIL, "r") as f:
             return json.load(f)
-    return []
+    return {}
 
-def spara_bolag_lista(bolag_lista):
-    with open(DATAFIL, "w", encoding="utf-8") as f:
-        json.dump(bolag_lista, f, ensure_ascii=False, indent=2)
+def spara_data(data):
+    with open(DATAFIL, "w") as f:
+        json.dump(data, f, indent=4)
 
-def lagg_till_eller_uppdatera_bolag(nytt_bolag):
-    bolag_lista = las_bolag()
-    nytt_bolag["senast_andrad"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+def lagg_till_eller_uppdatera_bolag(bolagsdata):
+    data = las_data()
+    namn = bolagsdata["namn"]
 
-    # Ersätt om bolaget redan finns
-    uppdaterad = False
-    for i, bolag in enumerate(bolag_lista):
-        if bolag["namn"] == nytt_bolag["namn"]:
-            bolag_lista[i] = nytt_bolag
-            uppdaterad = True
-            break
+    # Lägg till datum
+    bolagsdata["senast_andrad"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    if not uppdaterad:
-        bolag_lista.append(nytt_bolag)
+    # Räkna ut targetkurser och undervärdering
+    resultat = berakna_targetkurser(bolagsdata)
+    bolagsdata.update(resultat)
 
-    spara_bolag_lista(bolag_lista)
+    # Spara
+    data[namn] = bolagsdata
+    spara_data(data)
+
+def hamta_bolag(namn):
+    data = las_data()
+    return data.get(namn)
+
+def hamta_alla_bolag():
+    return las_data()
 
 def ta_bort_bolag(namn):
-    bolag_lista = las_bolag()
-    bolag_lista = [b for b in bolag_lista if b["namn"] != namn]
-    spara_bolag_lista(bolag_lista)
+    data = las_data()
+    if namn in data:
+        del data[namn]
+        spara_data(data)
