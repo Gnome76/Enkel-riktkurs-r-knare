@@ -1,4 +1,3 @@
-import streamlit as st
 import json
 import os
 
@@ -37,26 +36,22 @@ def berakna_targetkurser(bolag):
     tillväxt_iår = bolag.get("tillväxt_iår", 0) / 100
     tillväxt_nästa_år = bolag.get("tillväxt_nästa_år", 0) / 100
 
-    # Targetkurs P/E
-    target_pe_iår = pe_snitt * bolag.get("vinst_iår", 0) * säkerhet
-    target_pe_nästa_år = pe_snitt * bolag.get("vinst_nästa_år", 0) * säkerhet
-
-    # Targetkurs P/S - omsättningstillväxt påverkar p/s, inte multipliceras med snittet
     nuvarande_ps = bolag.get("nuvarande_ps", 1) or 1
     nuvarande_kurs = bolag.get("nuvarande_kurs", 0)
 
+    # Target P/E
+    target_pe_iår = pe_snitt * bolag.get("vinst_iår", 0) * säkerhet
+    target_pe_nästa_år = pe_snitt * bolag.get("vinst_nästa_år", 0) * säkerhet
+
+    # Justerad P/S
     ps_iår_justerat = nuvarande_ps * (1 + tillväxt_iår)
     ps_nästa_år_justerat = ps_iår_justerat * (1 + tillväxt_nästa_år)
 
     target_ps_iår = ps_snitt * ps_iår_justerat / nuvarande_ps * nuvarande_kurs * säkerhet
     target_ps_nästa_år = ps_snitt * ps_nästa_år_justerat / nuvarande_ps * nuvarande_kurs * säkerhet
 
-    # Undervärdering i %
     undervärdering_pe = 100 * (target_pe_nästa_år - nuvarande_kurs) / nuvarande_kurs if nuvarande_kurs else 0
     undervärdering_ps = 100 * (target_ps_nästa_år - nuvarande_kurs) / nuvarande_kurs if nuvarande_kurs else 0
-
-    köp_pe = target_pe_nästa_år * 0.7
-    köp_ps = target_ps_nästa_år * 0.7
 
     return {
         "target_pe_iår": target_pe_iår,
@@ -65,14 +60,13 @@ def berakna_targetkurser(bolag):
         "target_ps_nästa_år": target_ps_nästa_år,
         "undervardering_pe_pct": undervärdering_pe,
         "undervardering_ps_pct": undervärdering_ps,
-        "köpvärd_pe": köp_pe,
-        "köpvärd_ps": köp_ps,
+        "köpvärd_pe": target_pe_nästa_år * 0.7,
+        "köpvärd_ps": target_ps_nästa_år * 0.7
     }
 
 def uppdatera_berakningar(bolag_list):
     for bolag in bolag_list:
-        resultat = berakna_targetkurser(bolag)
-        bolag.update(resultat)
+        bolag.update(berakna_targetkurser(bolag))
 
 def filtrera_undervarderade(bolag_list, procent_grans=30):
     undervarderade = [
@@ -84,6 +78,8 @@ def filtrera_undervarderade(bolag_list, procent_grans=30):
         reverse=True
     )
     return undervarderade
+
+import streamlit as st
 
 def visa_inmatningsform(key_prefix, bolag=None):
     with st.form(key=f"form_{key_prefix}"):
@@ -108,7 +104,7 @@ def visa_inmatningsform(key_prefix, bolag=None):
         skickaknapp = st.form_submit_button("Spara")
 
     if skickaknapp:
-        nytt_bolag = {
+        return {
             "namn": namn,
             "nuvarande_kurs": nuvarande_kurs,
             "vinst_iår": vinst_iår,
@@ -125,37 +121,9 @@ def visa_inmatningsform(key_prefix, bolag=None):
             "ps_3": ps_3,
             "ps_4": ps_4,
         }
-        return nytt_bolag
     return None
 
-def main():
-    st.title("Aktieanalys med Targetkurser och Undervärdering")
-
-    if "bolag_list" not in st.session_state:
-        st.session_state["bolag_list"] = las_data()
-
-    # Visa formulär för nytt bolag
-    st.header("Lägg till nytt bolag")
-    nytt_bolag = visa_inmatningsform("nytt")
-
-    if nytt_bolag:
-        st.session_state["bolag_list"].append(nytt_bolag)
-        uppdatera_berakningar(st.session_state["bolag_list"])
-        spara_data(st.session_state["bolag_list"])
-        st.success(f"Bolag '{nytt_bolag['namn']}' tillagt!")
-
-    # Uppdatera beräkningar för alla bolag
-    uppdatera_berakningar(st.session_state["bolag_list"])
-
-    # Visa filter för undervärderade bolag
-    undervarderade_endast = st.checkbox("Visa endast undervärderade (>30%)", value=False)
-
-    bolag_att_visa = filtrera_undervarderade(st.session_state["bolag_list"]) if undervarderade_endast else st.session_state["bolag_list"]
-
-    st.header("Bolagslista")
-
-    for bolag in bolag_att_visa:
-        visa_bolag(bolag)
+import streamlit as st
 
 def visa_bolag(bolag):
     st.subheader(bolag.get("namn", "Okänt bolag"))
@@ -171,8 +139,38 @@ def visa_bolag(bolag):
 
     st.write(f"Köpvärd P/E: {bolag.get('köpvärd_pe', 0):.2f} SEK")
     st.write(f"Köpvärd P/S: {bolag.get('köpvärd_ps', 0):.2f} SEK")
-
     st.markdown("---")
+
+import streamlit as st
+from data_handler import las_data, spara_data
+from utils import uppdatera_berakningar, filtrera_undervarderade
+from forms import visa_inmatningsform
+from views import visa_bolag
+
+def main():
+    st.title("Aktieanalys med Targetkurser och Undervärdering")
+
+    if "bolag_list" not in st.session_state:
+        st.session_state["bolag_list"] = las_data()
+
+    st.header("Lägg till nytt bolag")
+    nytt_bolag = visa_inmatningsform("nytt")
+
+    if nytt_bolag:
+        st.session_state["bolag_list"].append(nytt_bolag)
+        uppdatera_berakningar(st.session_state["bolag_list"])
+        spara_data(st.session_state["bolag_list"])
+        st.success(f"Bolag '{nytt_bolag['namn']}' tillagt!")
+
+    uppdatera_berakningar(st.session_state["bolag_list"])
+
+    undervarderade_endast = st.checkbox("Visa endast undervärderade (>30%)", value=False)
+
+    bolag_att_visa = filtrera_undervarderade(st.session_state["bolag_list"]) if undervarderade_endast else st.session_state["bolag_list"]
+
+    st.header("Bolagslista")
+    for bolag in bolag_att_visa:
+        visa_bolag(bolag)
 
 if __name__ == "__main__":
     main()
