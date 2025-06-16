@@ -21,6 +21,8 @@ def visa_bolag_ett_i_taget():
     valt_bolag = bolag_lista[st.session_state["bolag_index"]]
     info = data[valt_bolag]
 
+    st.write("DEBUG: Data till beräkna_targetkurser:", info)
+    
     target_pe_i_ar, target_pe_nasta = beräkna_targetkurser(info, metod="pe")
     target_ps_i_ar, target_ps_nasta = beräkna_targetkurser(info, metod="ps")
     underv_pe_i_ar = beräkna_undervärdering(info["nuvarande_kurs"], target_pe_i_ar)
