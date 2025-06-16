@@ -1,36 +1,67 @@
-def beräkna_targetkurser(data: dict, metod="pe"):
+def safe_float(value):
     try:
-        kurs = float(data["nuvarande_kurs"])
-        if metod == "pe":
-            pe_tal = [float(data.get(f"pe{i}", 0)) for i in range(1, 5)]
-            snitt_pe = sum(pe_tal) / len(pe_tal)
-            vinst_i_ar = float(data.get("vinst_i_ar", 0))
-            vinst_nasta_ar = float(data.get("vinst_nasta_ar", 0))
-            target_pe_i_ar = snitt_pe * vinst_i_ar * 0.9
-            target_pe_nasta_ar = snitt_pe * vinst_nasta_ar * 0.9
-            return target_pe_i_ar, target_pe_nasta_ar
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
-        elif metod == "ps":
-            ps_tal = [float(data.get(f"ps{i}", 0)) for i in range(1, 5)]
-            snitt_ps = sum(ps_tal) / len(ps_tal)
-            tillv_i_ar = float(data.get("tillv_i_ar", 0)) / 100
-            tillv_nasta_ar = float(data.get("tillv_nasta_ar", 0)) / 100
-            nuvarande_ps = float(data.get("nuvarande_ps", 1)) or 1  # undvik division med 0
+def medelvarde(lista):
+    tal = [safe_float(x) for x in lista if safe_float(x) is not None]
+    if not tal:
+        return None
+    return sum(tal) / len(tal)
 
-            target_ps_i_ar = (snitt_ps * tillv_i_ar / nuvarande_ps * kurs) * 0.9
-            target_ps_nasta_ar = (snitt_ps * tillv_i_ar * tillv_nasta_ar / nuvarande_ps * kurs) * 0.9
-            return target_ps_i_ar, target_ps_nasta_ar
+def beräkna_targetkurser(info: dict, metod: str = "pe"):
+    # Metod kan vara "pe" eller "ps"
+    # För P/E: targetkurs = medelvärde av P/E 1-4 * vinst (i år eller nästa år) * 0.9 (säkerhetsmarginal)
+    # För P/S: targetkurs = medelvärde av P/S 1-4 * (omsättningstillväxt i år och nästa år) * nuvarande kurs * 0.9
 
-    except Exception:
-        return 0.0, 0.0
+    nuvarande_kurs = safe_float(info.get("nuvarande_kurs"))
+    if metod == "pe":
+        pe_varden = [info.get(f"pe_{i}") for i in range(1, 5)]
+        pe_varden_float = [safe_float(x) for x in pe_varden]
+        pe_medel = medelvarde(pe_varden_float)
+        vinst_i_ar = safe_float(info.get("vinst_i_ar"))
+        vinst_nasta_ar = safe_float(info.get("vinst_nasta_ar"))
+
+        if pe_medel is None or vinst_i_ar is None or vinst_nasta_ar is None:
+            return None
+
+        target_i_ar = pe_medel * vinst_i_ar * 0.9
+        target_nasta_ar = pe_medel * vinst_nasta_ar * 0.9
+        return target_i_ar, target_nasta_ar
+
+    elif metod == "ps":
+        ps_varden = [info.get(f"ps_{i}") for i in range(1, 5)]
+        ps_varden_float = [safe_float(x) for x in ps_varden]
+        ps_medel = medelvarde(ps_varden_float)
+
+        oms_tillvxt_i_ar = safe_float(info.get("oms_tillvxt_i_ar"))  # i procent, t.ex 10 för 10%
+        oms_tillvxt_nasta_ar = safe_float(info.get("oms_tillvxt_nasta_ar"))
+
+        if ps_medel is None or oms_tillvxt_i_ar is None or oms_tillvxt_nasta_ar is None or nuvarande_kurs is None:
+            return None
+
+        # Omvandla procent till decimal, t.ex 10% -> 1.10
+        oms_faktor_i_ar = 1 + oms_tillvxt_i_ar / 100
+        oms_faktor_nasta_ar = 1 + oms_tillvxt_nasta_ar / 100
+
+        # Targetkurs P/S i år och nästa år
+        target_i_ar = ps_medel * oms_faktor_i_ar * nuvarande_kurs * 0.9
+        target_nasta_ar = ps_medel * oms_faktor_i_ar * oms_faktor_nasta_ar * nuvarande_kurs * 0.9
+
+        return target_i_ar, target_nasta_ar
+
+    else:
+        return None
 
 
-def beräkna_undervärdering(data: dict, metod="pe"):
-    try:
-        kurs = float(data["nuvarande_kurs"])
-        target1, target2 = beräkna_targetkurser(data, metod)
-        underv1 = (target1 - kurs) / kurs * 100
-        underv2 = (target2 - kurs) / kurs * 100
-        return underv1, underv2
-    except Exception:
-        return 0.0, 0.0
+def beräkna_undervärdering(info: dict, metod: str = "pe"):
+    # Undervärdering i % = (targetkurs - nuvarande kurs) / targetkurs * 100
+    nuvarande_kurs = safe_float(info.get("nuvarande_kurs"))
+    target = beräkna_targetkurser(info, metod)
+    if nuvarande_kurs is None or target is None:
+        return None
+    target_i_ar, target_nasta_ar = target
+    underv_i_ar = ((target_i_ar - nuvarande_kurs) / target_i_ar) * 100 if target_i_ar else None
+    underv_nasta_ar = ((target_nasta_ar - nuvarande_kurs) / target_nasta_ar) * 100 if target_nasta_ar else None
+    return underv_i_ar, underv_nasta_ar
