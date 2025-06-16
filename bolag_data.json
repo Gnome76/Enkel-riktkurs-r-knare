@@ -1,15 +1,1 @@
-import json
-import os
-
-DATA_FIL = "bolag_data.json"
-
-def load_data():
-    if os.path.exists(DATA_FIL):
-        with open(DATA_FIL, "r", encoding="utf-8") as f:
-            return json.load(f)
-    else:
-        return {}
-
-def save_data(data):
-    with open(DATA_FIL, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+[]
