@@ -1,78 +1,49 @@
-def beräkna_targetkurser(bolag: dict) -> dict:
-    """
-    Beräkna targetkurser baserat på:
-    - Nuvarande P/E och P/E 1-4
-    - Nuvarande P/S och P/S 1-4
-    - Vinst i år och nästa år
-    - Omsättningstillväxt i år och nästa år
+import streamlit as st
 
-    Säkerhetsmarginal på 10% (0.9) appliceras på targetkurser.
+def beräkna_targetkurser(info, metod="pe"):
+    st.write("🔍 DEBUG: beräkna_targetkurser info =", info)
+    st.write("🔍 DEBUG: metod =", metod)
 
-    Returnerar en dict med:
-    {
-        "targetkurs_pe_i_år": float,
-        "targetkurs_pe_nästa_år": float,
-        "targetkurs_ps_i_år": float,
-        "targetkurs_ps_nästa_år": float
-    }
-    """
+    try:
+        kurs = float(info.get("nuvarande_kurs", 0))
 
-    # Extrahera nödvändiga värden, med fallback till 0 om saknas
-    nuvarande_pe = float(bolag.get("nuvarande_pe", 0) or 0)
-    pe_1 = float(bolag.get("pe_1", 0) or 0)
-    pe_2 = float(bolag.get("pe_2", 0) or 0)
-    pe_3 = float(bolag.get("pe_3", 0) or 0)
-    pe_4 = float(bolag.get("pe_4", 0) or 0)
+        if metod == "pe":
+            pe_tal = [float(info.get(f"pe{i}", 0)) for i in range(1, 5)]
+            pe_snitt = sum(pe_tal) / len(pe_tal)
+            vinst_i_ar = float(info.get("vinst_i_ar", 0))
+            vinst_nasta_ar = float(info.get("vinst_nasta_ar", 0))
 
-    nuvarande_ps = float(bolag.get("nuvarande_ps", 0) or 0)
-    ps_1 = float(bolag.get("ps_1", 0) or 0)
-    ps_2 = float(bolag.get("ps_2", 0) or 0)
-    ps_3 = float(bolag.get("ps_3", 0) or 0)
-    ps_4 = float(bolag.get("ps_4", 0) or 0)
+            target_i_ar = round(pe_snitt * vinst_i_ar * 0.9, 2)
+            target_nasta_ar = round(pe_snitt * vinst_nasta_ar * 0.9, 2)
+            return target_i_ar, target_nasta_ar
 
-    vinst_i_år = float(bolag.get("vinst_i_år", 0) or 0)
-    vinst_nästa_år = float(bolag.get("vinst_nästa_år", 0) or 0)
+        elif metod == "ps":
+            ps_tal = [float(info.get(f"ps{i}", 0)) for i in range(1, 5)]
+            ps_snitt = sum(ps_tal) / len(ps_tal)
+            tillv_i_ar = float(info.get("oms_tillv_i_ar", 0)) / 100
+            tillv_nasta_ar = float(info.get("oms_tillv_nasta_ar", 0)) / 100
+            nuvarande_ps = float(info.get("nuvarande_ps", 1))  # för att undvika div/0
 
-    omsättningstillväxt_i_år = float(bolag.get("omsättningstillväxt_i_år", 0) or 0) / 100
-    omsättningstillväxt_nästa_år = float(bolag.get("omsättningstillväxt_nästa_år", 0) or 0) / 100
+            target_i_ar = round(ps_snitt * tillv_i_ar / nuvarande_ps * kurs * 0.9, 2)
+            target_nasta_ar = round(ps_snitt * tillv_i_ar * tillv_nasta_ar / nuvarande_ps * kurs * 0.9, 2)
+            return target_i_ar, target_nasta_ar
 
-    nuvarande_kurs = float(bolag.get("nuvarande_kurs", 0) or 0)
+        else:
+            st.warning("⚠️ Okänd metod i beräkna_targetkurser.")
+            return None, None
 
-    # Beräkna snitt P/E och P/S (P/E 1-4 och P/S 1-4)
-    pe_list = [pe_1, pe_2, pe_3, pe_4]
-    ps_list = [ps_1, ps_2, ps_3, ps_4]
+    except Exception as e:
+        st.error(f"Fel i beräkna_targetkurser: {e}")
+        return None, None
 
-    pe_list = [x for x in pe_list if x > 0]
-    ps_list = [x for x in ps_list if x > 0]
 
-    snitt_pe = sum(pe_list) / len(pe_list) if pe_list else 0
-    snitt_ps = sum(ps_list) / len(ps_list) if ps_list else 0
-
-    säkerhetsmarginal = 0.9
-
-    # Targetkurser P/E
-    targetkurs_pe_i_år = snitt_pe * vinst_i_år * säkerhetsmarginal if snitt_pe and vinst_i_år else 0
-    targetkurs_pe_nästa_år = snitt_pe * vinst_nästa_år * säkerhetsmarginal if snitt_pe and vinst_nästa_år else 0
-
-    # Targetkurser P/S
-    # Formeln: snitt_ps * omsättningstillväxt * nuvarande_kurs * säkerhetsmarginal
-    # För nästa år multiplicerar vi omsättningstillväxt i år och nästa år
-    targetkurs_ps_i_år = snitt_ps * omsättningstillväxt_i_år * nuvarande_kurs * säkerhetsmarginal if snitt_ps and omsättningstillväxt_i_år and nuvarande_kurs else 0
-    targetkurs_ps_nästa_år = snitt_ps * omsättningstillväxt_i_år * omsättningstillväxt_nästa_år * nuvarande_kurs * säkerhetsmarginal if snitt_ps and omsättningstillväxt_i_år and omsättningstillväxt_nästa_år and nuvarande_kurs else 0
-
-    return {
-        "targetkurs_pe_i_år": targetkurs_pe_i_år,
-        "targetkurs_pe_nästa_år": targetkurs_pe_nästa_år,
-        "targetkurs_ps_i_år": targetkurs_ps_i_år,
-        "targetkurs_ps_nästa_år": targetkurs_ps_nästa_år
-    }
-
-def beräkna_undervärdering(nuvarande_kurs: float, targetkurs: float) -> float:
-    """
-    Beräkna undervärdering i procent mellan nuvarande kurs och targetkurs.
-    Returnerar positivt värde om kursen är undervärderad.
-    """
-
-    if not nuvarande_kurs or not targetkurs:
-        return 0.0
-    return round((targetkurs - nuvarande_kurs) / nuvarande_kurs * 100, 2)
+def beräkna_undervärdering(nuvarande_kurs, targetkurs):
+    try:
+        if targetkurs and targetkurs > 0:
+            undervärdering = round((1 - nuvarande_kurs / targetkurs) * 100, 1)
+            return undervärdering
+        else:
+            return None
+    except Exception as e:
+        st.error(f"Fel i beräkna_undervärdering: {e}")
+        return None
