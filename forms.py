@@ -1,59 +1,55 @@
 import streamlit as st
 
-def nytt_bolag_form():
+def nytt_bolag_formular(data):
+    st.write("Fyll i uppgifterna för nytt bolag:")
+
     with st.form(key="nytt_bolag_form", clear_on_submit=True):
-        st.subheader("Lägg till nytt bolag")
+        bolagsnamn = st.text_input("Bolagsnamn")
+        nuvarande_kurs = st.number_input("Nuvarande kurs", min_value=0.0, format="%.2f")
+        vinst_i_ar = st.number_input("Vinst i år", min_value=0.0, format="%.2f")
+        vinst_nasta_ar = st.number_input("Vinst nästa år", min_value=0.0, format="%.2f")
+        omsattningstillvaxt_i_ar = st.number_input("Omsättningstillväxt i år (%)", min_value=0.0, max_value=100.0, format="%.2f")
+        omsattningstillvaxt_nasta_ar = st.number_input("Omsättningstillväxt nästa år (%)", min_value=0.0, max_value=100.0, format="%.2f")
+        nuvarande_pe = st.number_input("Nuvarande P/E", min_value=0.0, format="%.2f")
+        pe1 = st.number_input("P/E 1", min_value=0.0, format="%.2f")
+        pe2 = st.number_input("P/E 2", min_value=0.0, format="%.2f")
+        pe3 = st.number_input("P/E 3", min_value=0.0, format="%.2f")
+        pe4 = st.number_input("P/E 4", min_value=0.0, format="%.2f")
+        nuvarande_ps = st.number_input("Nuvarande P/S", min_value=0.0, format="%.2f")
+        ps1 = st.number_input("P/S 1", min_value=0.0, format="%.2f")
+        ps2 = st.number_input("P/S 2", min_value=0.0, format="%.2f")
+        ps3 = st.number_input("P/S 3", min_value=0.0, format="%.2f")
+        ps4 = st.number_input("P/S 4", min_value=0.0, format="%.2f")
 
-        bolagsnamn = st.text_input("Bolagsnamn", max_chars=50)
+        submit = st.form_submit_button("Lägg till bolag")
 
-        nuvarande_kurs = st.number_input("Nuvarande kurs (kr)", min_value=0.0, format="%.2f")
-        
-        # Vinst
-        vinst_forra_aret = st.number_input("Vinst förra året (kr)", format="%.2f")
-        vinst_i_ar = st.number_input("Förväntad vinst i år (kr)", format="%.2f")
-        vinst_nasta_ar = st.number_input("Förväntad vinst nästa år (kr)", format="%.2f")
-
-        # Omsättningstillväxt i procent (decimaltal, t.ex. 0.1 = 10%)
-        omsattningstillvaxt_i_ar = st.number_input("Omsättningstillväxt i år (%)", format="%.2f") / 100
-        omsattningstillvaxt_nasta_ar = st.number_input("Omsättningstillväxt nästa år (%)", format="%.2f") / 100
-
-        # P/E-tal (nuvarande och prognoser)
-        pe_nuvarande = st.number_input("Nuvarande P/E", min_value=0.0, format="%.2f")
-        pe_1 = st.number_input("P/E prognos år 1", min_value=0.0, format="%.2f")
-        pe_2 = st.number_input("P/E prognos år 2", min_value=0.0, format="%.2f")
-        pe_3 = st.number_input("P/E prognos år 3", min_value=0.0, format="%.2f")
-        pe_4 = st.number_input("P/E prognos år 4", min_value=0.0, format="%.2f")
-
-        # P/S-tal (nuvarande och prognoser)
-        ps_nuvarande = st.number_input("Nuvarande P/S", min_value=0.0, format="%.2f")
-        ps_1 = st.number_input("P/S prognos år 1", min_value=0.0, format="%.2f")
-        ps_2 = st.number_input("P/S prognos år 2", min_value=0.0, format="%.2f")
-        ps_3 = st.number_input("P/S prognos år 3", min_value=0.0, format="%.2f")
-        ps_4 = st.number_input("P/S prognos år 4", min_value=0.0, format="%.2f")
-
-        skickaknapp = st.form_submit_button("Spara bolag")
-
-        if skickaknapp:
+        if submit:
             if not bolagsnamn.strip():
-                st.error("Bolagsnamn kan inte vara tomt.")
+                st.error("Bolagsnamn måste anges.")
                 return None
-            data = {
+
+            if bolagsnamn in data:
+                st.error("Bolaget finns redan. Använd redigeringsfunktionen.")
+                return None
+
+            bolag_data = {
+                "bolagsnamn": bolagsnamn,
                 "nuvarande_kurs": nuvarande_kurs,
-                "vinst_forra_aret": vinst_forra_aret,
                 "vinst_i_ar": vinst_i_ar,
                 "vinst_nasta_ar": vinst_nasta_ar,
-                "omsattningstillvaxt_i_ar": omsattningstillvaxt_i_ar,
-                "omsattningstillvaxt_nasta_ar": omsattningstillvaxt_nasta_ar,
-                "pe_nuvarande": pe_nuvarande,
-                "pe_1": pe_1,
-                "pe_2": pe_2,
-                "pe_3": pe_3,
-                "pe_4": pe_4,
-                "ps_nuvarande": ps_nuvarande,
-                "ps_1": ps_1,
-                "ps_2": ps_2,
-                "ps_3": ps_3,
-                "ps_4": ps_4,
+                "omsattningstillvaxt_i_ar": omsattningstillvaxt_i_ar / 100,
+                "omsattningstillvaxt_nasta_ar": omsattningstillvaxt_nasta_ar / 100,
+                "nuvarande_pe": nuvarande_pe,
+                "pe1": pe1,
+                "pe2": pe2,
+                "pe3": pe3,
+                "pe4": pe4,
+                "nuvarande_ps": nuvarande_ps,
+                "ps1": ps1,
+                "ps2": ps2,
+                "ps3": ps3,
+                "ps4": ps4,
             }
-            return bolagsnamn.strip(), data
-        return None
+            return bolag_data
+
+    return None
