@@ -11,3 +11,7 @@ def nytt_bolag_formular(data):
             else:
                 data[namn.strip()] = {"testfält": 1}
                 st.success(f"Bolag '{namn}' tillagt (test).")
+
+def redigeringsformular(data):
+    st.write("### Redigera bolag (testversion)")
+    st.info("Redigeringsfunktionalitet är inte implementerad än.")
