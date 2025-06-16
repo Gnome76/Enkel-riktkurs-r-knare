@@ -1,25 +1,24 @@
 import streamlit as st
-from data_handler import load_data
-from forms import lagg_till_bolag_form, redigera_bolag_form, tabort_bolag_form
+from data_handler import load_data, save_data
+from forms import nytt_bolag_formular, redigeringsformular
 from view import visa_bolag_ett_i_taget
+from utils import beräkna_targetkurser, beräkna_undervärdering
 
-st.set_page_config(page_title="Aktieanalys", layout="centered")
+st.set_page_config(page_title="Enkel riktkursräknare", layout="centered")
 
-if "data" not in st.session_state:
-    st.session_state.data = load_data()
+st.title("📈 Enkel riktkursräknare")
 
-st.title("Aktieanalysapp")
+# Ladda data
+data = load_data()
 
-meny = st.sidebar.radio("Navigering", ["Visa bolag", "Lägg till bolag", "Redigera bolag", "Ta bort bolag"])
+# Välj läge
+läge = st.radio("Vad vill du göra?", ["➕ Lägg till nytt bolag", "✏️ Redigera befintligt bolag"])
 
-if meny == "Visa bolag":
-    visa_bolag_ett_i_taget()
+if läge == "➕ Lägg till nytt bolag":
+    nytt_bolag_formular(data)
+elif läge == "✏️ Redigera befintligt bolag":
+    redigeringsformular(data)
 
-elif meny == "Lägg till bolag":
-    lagg_till_bolag_form()
-
-elif meny == "Redigera bolag":
-    redigera_bolag_form()
-
-elif meny == "Ta bort bolag":
-    tabort_bolag_form()
+# Visa bolag en i taget
+st.markdown("---")
+visa_bolag_ett_i_taget()
