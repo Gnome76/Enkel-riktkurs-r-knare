@@ -1,21 +1,29 @@
 import json
 import os
 
-FILNAMN = "bolag_data.json"
+DATAFIL = "bolag_data.json"
 
 def load_data():
-    if not os.path.exists(FILNAMN):
-        print("DEBUG: Filen finns inte, returnerar tom dict.")
+    if not os.path.exists(DATAFIL):
+        print("DEBUG: Filen finns inte – skapar ny tom data.")
         return {}
 
     try:
-        with open(FILNAMN, "r", encoding="utf-8") as f:
+        with open(DATAFIL, "r", encoding="utf-8") as f:
             data = json.load(f)
-        if not isinstance(data, dict):
-            print(f"DEBUG: Filen lästes in men innehåller inte en dict: {type(data)}")
-            return {}
-        print(f"DEBUG: Data laddad, antal bolag: {len(data)}")
-        return data
+            if not isinstance(data, dict):
+                print("DEBUG: Data i filen är inte en dict – återgår till tom.")
+                return {}
+            print(f"DEBUG: Data korrekt inläst. Antal bolag: {len(data)}")
+            return data
     except Exception as e:
         print(f"DEBUG: Fel vid inläsning av JSON: {e}")
         return {}
+
+def save_data(data):
+    try:
+        with open(DATAFIL, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print("DEBUG: Data sparad.")
+    except Exception as e:
+        print(f"DEBUG: Fel vid sparande av data: {e}")
