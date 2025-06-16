@@ -1,5 +1,3 @@
-import os
-st.write(os.listdir("."))  # Visa lista över filer i rotmappen
 import streamlit as st
 from data_handler import load_data
 from forms import lagg_till_bolag_form, redigera_bolag_form, tabort_bolag_form
