@@ -35,7 +35,6 @@ def visa_bolag_ett_i_taget():
         target_pe_i_ar, target_pe_nasta = result_pe
         st.write(f"**Targetkurs P/E:** {target_pe_i_ar:.1f} kr / {target_pe_nasta:.1f} kr")
     else:
-        target_pe_i_ar = target_pe_nasta = None
         st.warning("⚠️ Kunde inte räkna ut targetkurs för P/E.")
 
     # Targetkurser P/S
@@ -44,7 +43,6 @@ def visa_bolag_ett_i_taget():
         target_ps_i_ar, target_ps_nasta = result_ps
         st.write(f"**Targetkurs P/S:** {target_ps_i_ar:.1f} kr / {target_ps_nasta:.1f} kr")
     else:
-        target_ps_i_ar = target_ps_nasta = None
         st.warning("⚠️ Kunde inte räkna ut targetkurs för P/S.")
 
     # Undervärdering P/E
@@ -65,13 +63,11 @@ def visa_bolag_ett_i_taget():
 
     # Köpvärda nivåer med säkerhetsmarginal (-30%)
     st.markdown("### 💰 Köpvärd nivå (-30%)")
-    if target_pe_i_ar:
+    if result_pe:
         st.write(f"- P/E i år: {target_pe_i_ar * 0.7:.1f} kr")
-    if target_pe_nasta:
         st.write(f"- P/E nästa år: {target_pe_nasta * 0.7:.1f} kr")
-    if target_ps_i_ar:
+    if result_ps:
         st.write(f"- P/S i år: {target_ps_i_ar * 0.7:.1f} kr")
-    if target_ps_nasta:
         st.write(f"- P/S nästa år: {target_ps_nasta * 0.7:.1f} kr")
 
 def main():
@@ -82,11 +78,9 @@ def main():
     nytt_bolag = nytt_bolag_formular(data)
 
     if nytt_bolag is not None:
-        # Spara det nya bolaget i data
         data[nytt_bolag["bolagsnamn"]] = nytt_bolag
         save_data(data)
         st.success(f"Bolaget '{nytt_bolag['bolagsnamn']}' har lagts till.")
-        # Sätt index till det nya bolaget så det visas direkt
         st.session_state["val_index"] = list(data.keys()).index(nytt_bolag["bolagsnamn"])
 
     st.header("Visa bolag ett i taget")
