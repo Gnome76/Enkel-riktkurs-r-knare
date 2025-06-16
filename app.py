@@ -2,31 +2,25 @@ import streamlit as st
 from data_handler import load_data, save_data
 from forms import nytt_bolag_formular, redigeringsformular
 from view import visa_bolag_ett_i_taget
-from utils import beräkna_targetkurser, beräkna_undervärdering
 
-st.set_page_config(page_title="Enkel riktkursräknare", layout="centered")
+def main():
+    st.title("Aktieanalysapp")
 
-st.title("📈 Enkel riktkursräknare")
+    data = load_data()
 
-# Ladda data
-data = load_data()
+    # Huvudmeny: Lägg till eller redigera bolag
+    val = st.radio("Vad vill du göra?", ("Visa bolag", "Lägg till nytt bolag", "Redigera befintligt bolag"))
 
-# Om datan är None eller inte en dict, återställ till tom
-if not isinstance(data, dict):
-    st.warning("❗ Databasen kunde inte läsas korrekt. Startar med tom databas.")
-    data = {}
+    if val == "Visa bolag":
+        visa_bolag_ett_i_taget()
+    elif val == "Lägg till nytt bolag":
+        if nytt_bolag_formular(data):
+            save_data(data)
+            st.success("Nytt bolag tillagt och sparat!")
+    elif val == "Redigera befintligt bolag":
+        if redigeringsformular(data):
+            save_data(data)
+            st.success("Bolagsdata uppdaterad och sparad!")
 
-# Välj läge
-läge = st.radio("Vad vill du göra?", ["➕ Lägg till nytt bolag", "✏️ Redigera befintligt bolag"])
-
-if läge == "➕ Lägg till nytt bolag":
-    nytt_bolag_formular(data)
-elif läge == "✏️ Redigera befintligt bolag":
-    redigeringsformular(data)
-
-# Spara data om något ändrats (uppdateringar hanteras i formulären)
-save_data(data)
-
-# Visa bolag en i taget
-st.markdown("---")
-visa_bolag_ett_i_taget()
+if __name__ == "__main__":
+    main()
