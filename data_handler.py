@@ -1,29 +1,33 @@
 import json
 import os
 
-DATAFIL = "bolag_data.json"
+FILNAMN = "bolag_data.json"
 
 def load_data():
-    if not os.path.exists(DATAFIL):
-        print("DEBUG: Filen finns inte – skapar ny tom data.")
+    """
+    Ladda bolagsdata från JSON-fil.
+    Returnerar en dict med bolagsdata.
+    Om filen inte finns, returneras en tom dict.
+    """
+    if not os.path.exists(FILNAMN):
         return {}
 
     try:
-        with open(DATAFIL, "r", encoding="utf-8") as f:
+        with open(FILNAMN, "r", encoding="utf-8") as f:
             data = json.load(f)
-            if not isinstance(data, dict):
-                print("DEBUG: Data i filen är inte en dict – återgår till tom.")
-                return {}
-            print(f"DEBUG: Data korrekt inläst. Antal bolag: {len(data)}")
-            return data
+        return data
     except Exception as e:
-        print(f"DEBUG: Fel vid inläsning av JSON: {e}")
+        # Vid fel, returnera tom dict men skriv ut fel i konsolen (kan bytas till logg)
+        print(f"Fel vid inläsning av {FILNAMN}: {e}")
         return {}
 
 def save_data(data):
+    """
+    Spara bolagsdata till JSON-fil.
+    Tar en dict som input.
+    """
     try:
-        with open(DATAFIL, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        print("DEBUG: Data sparad.")
+        with open(FILNAMN, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
     except Exception as e:
-        print(f"DEBUG: Fel vid sparande av data: {e}")
+        print(f"Fel vid sparning av {FILNAMN}: {e}")
