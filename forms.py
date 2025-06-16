@@ -46,3 +46,5 @@ def redigeringsformular(data):
             bolag["senast_andrad"] = datetime.now().strftime("%Y-%m-%d")
 
             st.success(f"{valt_bolag} har uppdaterats.")
+def redigeringsformular(data):
+    st.info("✏️ Redigeringsfunktion kommer snart.")
