@@ -1,3 +1,4 @@
+print("🚀 forms.py laddas korrekt!")
 import streamlit as st
 
 def nytt_bolag_formular(data):
