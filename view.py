@@ -1,7 +1,3 @@
-import streamlit as st
-from data_handler import load_data
-from utils import beräkna_targetkurser, beräkna_undervärdering
-
 def visa_bolag_ett_i_taget():
     data = load_data()
     
@@ -28,8 +24,9 @@ def visa_bolag_ett_i_taget():
     st.subheader(valt_bolag)
     st.write(f"**Nuvarande kurs:** {info.get('nuvarande_kurs', 'saknas')} kr")
 
-    # Targetkurser P/E
+    st.write("DEBUG: Data till beräkna_targetkurser med metod='pe':", info)
     result_pe = beräkna_targetkurser(info, metod="pe")
+    st.write("DEBUG: Resultat från beräkna_targetkurser (pe):", result_pe)
     if result_pe:
         target_pe_i_ar, target_pe_nasta = result_pe
         st.write(f"**Targetkurs P/E:** {target_pe_i_ar:.1f} kr / {target_pe_nasta:.1f} kr")
@@ -37,8 +34,9 @@ def visa_bolag_ett_i_taget():
         target_pe_i_ar = target_pe_nasta = None
         st.warning("⚠️ Kunde inte räkna ut targetkurs för P/E.")
 
-    # Targetkurser P/S
+    st.write("DEBUG: Data till beräkna_targetkurser med metod='ps':", info)
     result_ps = beräkna_targetkurser(info, metod="ps")
+    st.write("DEBUG: Resultat från beräkna_targetkurser (ps):", result_ps)
     if result_ps:
         target_ps_i_ar, target_ps_nasta = result_ps
         st.write(f"**Targetkurs P/S:** {target_ps_i_ar:.1f} kr / {target_ps_nasta:.1f} kr")
@@ -46,16 +44,18 @@ def visa_bolag_ett_i_taget():
         target_ps_i_ar = target_ps_nasta = None
         st.warning("⚠️ Kunde inte räkna ut targetkurs för P/S.")
 
-    # Undervärdering P/E
+    st.write("DEBUG: Data till beräkna_undervärdering med metod='pe':", info)
     result_pe_underv = beräkna_undervärdering(info, metod="pe")
+    st.write("DEBUG: Resultat från beräkna_undervärdering (pe):", result_pe_underv)
     if result_pe_underv:
         underv_pe_i_ar, underv_pe_nasta = result_pe_underv
         st.write(f"**Undervärdering P/E:** {underv_pe_i_ar:.0f}% / {underv_pe_nasta:.0f}%")
     else:
         st.warning("⚠️ Kunde inte räkna ut undervärdering för P/E.")
 
-    # Undervärdering P/S
+    st.write("DEBUG: Data till beräkna_undervärdering med metod='ps':", info)
     result_ps_underv = beräkna_undervärdering(info, metod="ps")
+    st.write("DEBUG: Resultat från beräkna_undervärdering (ps):", result_ps_underv)
     if result_ps_underv:
         underv_ps_i_ar, underv_ps_nasta = result_ps_underv
         st.write(f"**Undervärdering P/S:** {underv_ps_i_ar:.0f}% / {underv_ps_nasta:.0f}%")
