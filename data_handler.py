@@ -1,33 +1,21 @@
 import json
 import os
-from datetime import datetime
 
-DATAFIL = "bolag_data.json"
+DATA_FILE = "bolag_data.json"
 
 def load_data():
-    if not os.path.exists(DATAFIL):
+    if not os.path.exists(DATA_FILE):
         return {}
-    with open(DATAFIL, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if isinstance(data, dict):
+                return data
+            else:
+                return {}
+    except Exception:
+        return {}
 
 def save_data(data):
-    with open(DATAFIL, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-def lägg_till_bolag(namn, info):
-    data = load_data()
-    info["insatt_datum"] = datetime.today().strftime("%Y-%m-%d")
-    data[namn] = info
-    save_data(data)
-
-def uppdatera_bolag(namn, info):
-    data = load_data()
-    info["insatt_datum"] = datetime.today().strftime("%Y-%m-%d")
-    data[namn] = info
-    save_data(data)
-
-def radera_bolag(namn):
-    data = load_data()
-    if namn in data:
-        del data[namn]
-        save_data(data)
+    with open(DATA_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
