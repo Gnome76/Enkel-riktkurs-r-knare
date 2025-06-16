@@ -43,8 +43,18 @@ def visa_bolag_ett_i_taget():
         st.warning("⚠️ Kunde inte räkna ut targetkurs P/S.")
 
     # Undervärdering
-    underv_pe_i_ar, underv_pe_nasta = beräkna_undervärdering(info, metod="pe")
-    underv_ps_i_ar, underv_ps_nasta = beräkna_undervärdering(info, metod="ps")
+    result_pe = beräkna_undervärdering(info, metod="pe")
+if result_pe:
+    underv_pe_i_ar, underv_pe_nasta = result_pe
+    st.write(f"**Undervärdering P/E:** {underv_pe_i_ar:.0f}% / {underv_pe_nasta:.0f}%")
+else:
+    st.warning("⚠️ Kunde inte räkna ut undervärdering för P/E.")
+    result_ps = beräkna_undervärdering(info, metod="ps")
+if result_ps:
+    underv_ps_i_ar, underv_ps_nasta = result_ps
+    st.write(f"**Undervärdering P/S:** {underv_ps_i_ar:.0f}% / {underv_ps_nasta:.0f}%")
+else:
+    st.warning("⚠️ Kunde inte räkna ut undervärdering för P/S.")
 
     if underv_pe_i_ar is not None and underv_pe_nasta is not None:
         st.write(f"**Undervärdering P/E:** {underv_pe_i_ar:.0f}% / {underv_pe_nasta:.0f}%")
