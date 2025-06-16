@@ -49,3 +49,5 @@ def nytt_bolag_formular(data):
                 "ps4": ps4,
             }
             st.success(f"✅ Bolaget '{namn}' har lagts till.")
+def redigeringsformular(data):
+    st.info("✏️ Redigeringsfunktion kommer snart.")
