@@ -1,61 +1,36 @@
-import streamlit as st
-
-def beräkna_targetkurser(info, metod="pe"):
-    st.write("🔍 DEBUG: Data till beräkna_targetkurser:", info)
-
+def beräkna_targetkurser(data: dict, metod="pe"):
     try:
-        nuvarande_kurs = info.get("nuvarande_kurs", 0)
-        nuvarande_ps = info.get("nuvarande_ps", 0)
+        kurs = float(data["nuvarande_kurs"])
+        if metod == "pe":
+            pe_tal = [float(data.get(f"pe{i}", 0)) for i in range(1, 5)]
+            snitt_pe = sum(pe_tal) / len(pe_tal)
+            vinst_i_ar = float(data.get("vinst_i_ar", 0))
+            vinst_nasta_ar = float(data.get("vinst_nasta_ar", 0))
+            target_pe_i_ar = snitt_pe * vinst_i_ar * 0.9
+            target_pe_nasta_ar = snitt_pe * vinst_nasta_ar * 0.9
+            return target_pe_i_ar, target_pe_nasta_ar
 
-        pe_tal = [info.get(f"pe{i}", 0) for i in range(1, 5)]
-        ps_tal = [info.get(f"ps{i}", 0) for i in range(1, 5)]
+        elif metod == "ps":
+            ps_tal = [float(data.get(f"ps{i}", 0)) for i in range(1, 5)]
+            snitt_ps = sum(ps_tal) / len(ps_tal)
+            tillv_i_ar = float(data.get("tillv_i_ar", 0)) / 100
+            tillv_nasta_ar = float(data.get("tillv_nasta_ar", 0)) / 100
+            nuvarande_ps = float(data.get("nuvarande_ps", 1)) or 1  # undvik division med 0
 
-        snitt_pe = sum(pe_tal) / len(pe_tal) if all(pe_tal) else 0
-        snitt_ps = sum(ps_tal) / len(ps_tal) if all(ps_tal) else 0
+            target_ps_i_ar = (snitt_ps * tillv_i_ar / nuvarande_ps * kurs) * 0.9
+            target_ps_nasta_ar = (snitt_ps * tillv_i_ar * tillv_nasta_ar / nuvarande_ps * kurs) * 0.9
+            return target_ps_i_ar, target_ps_nasta_ar
 
-        vinst_i_ar = info.get("vinst_i_ar", 0)
-        vinst_nasta_ar = info.get("vinst_nasta_ar", 0)
+    except Exception:
+        return 0.0, 0.0
 
-        tillvaxt_i_ar = info.get("oms_tillv_i_ar", 0) / 100
-        tillvaxt_nasta_ar = info.get("oms_tillv_nasta_ar", 0) / 100
 
-        säkerhetsmarginal = 0.9
-
-        if metod == "pe" and snitt_pe > 0:
-            target_i_ar = snitt_pe * vinst_i_ar * säkerhetsmarginal
-            target_nasta = snitt_pe * vinst_nasta_ar * säkerhetsmarginal
-        elif metod == "ps" and snitt_ps > 0 and nuvarande_ps > 0:
-            faktor_i_ar = tillvaxt_i_ar
-            faktor_nasta = tillvaxt_i_ar * tillvaxt_nasta_ar
-
-            target_i_ar = snitt_ps * faktor_i_ar / nuvarande_ps * nuvarande_kurs * säkerhetsmarginal
-            target_nasta = snitt_ps * faktor_nasta / nuvarande_ps * nuvarande_kurs * säkerhetsmarginal
-        else:
-            return None
-
-        return round(target_i_ar, 2), round(target_nasta, 2)
-
-    except Exception as e:
-        st.error(f"Fel vid beräkning av targetkurser: {e}")
-        return None
-
-def beräkna_undervärdering(info, metod="pe"):
+def beräkna_undervärdering(data: dict, metod="pe"):
     try:
-        nuvarande_kurs = info.get("nuvarande_kurs")
-        if nuvarande_kurs in [None, 0]:
-            return None
-
-        result = beräkna_targetkurser(info, metod=metod)
-        if not result:
-            return None
-
-        target_i_ar, target_nasta = result
-
-        underv_i_ar = ((target_i_ar - nuvarande_kurs) / nuvarande_kurs) * 100
-        underv_nasta = ((target_nasta - nuvarande_kurs) / nuvarande_kurs) * 100
-
-        return round(underv_i_ar), round(underv_nasta)
-
-    except Exception as e:
-        st.error(f"Fel vid beräkning av undervärdering: {e}")
-        return None
+        kurs = float(data["nuvarande_kurs"])
+        target1, target2 = beräkna_targetkurser(data, metod)
+        underv1 = (target1 - kurs) / kurs * 100
+        underv2 = (target2 - kurs) / kurs * 100
+        return underv1, underv2
+    except Exception:
+        return 0.0, 0.0
