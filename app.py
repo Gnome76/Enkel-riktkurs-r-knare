@@ -149,4 +149,33 @@ def visa_bolag_ett_i_taget(data):
 def main():
     st.title("Aktieanalysapp med Mobilvy")
 
-    # Initiera
+    # Initiera data i session_state om den inte finns
+    if "data" not in st.session_state:
+        st.session_state.data = load_data()
+
+    # Sidval med meny
+    menyval = st.sidebar.radio("Välj vy", ["Lägg till bolag", "Redigera bolag", "Ta bort bolag", "Visa bolag ett i taget"])
+
+    if menyval == "Lägg till bolag":
+        lagg_till_bolag_form()
+
+    elif menyval == "Redigera bolag":
+        if st.session_state.data:
+            redigera_bolag_form(st.session_state.data)
+        else:
+            st.info("Inga bolag att redigera. Lägg till bolag först.")
+
+    elif menyval == "Ta bort bolag":
+        if st.session_state.data:
+            tabort_bolag_form(st.session_state.data)
+        else:
+            st.info("Inga bolag att ta bort.")
+
+    elif menyval == "Visa bolag ett i taget":
+        if st.session_state.data:
+            visa_bolag_ett_i_taget(st.session_state.data)
+        else:
+            st.info("Inga bolag att visa.")
+
+if __name__ == "__main__":
+    main()
