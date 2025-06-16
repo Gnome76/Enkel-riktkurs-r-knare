@@ -1,25 +1,21 @@
 import streamlit as st
-from data_handler import load_data, save_data
+from data_handler import load_data
 from forms import nytt_bolag_formular, redigeringsformular
 from view import visa_bolag_ett_i_taget
 
 def main():
-    st.title("Enkel Riktkurs-Räknare")
+    data = load_data()
 
-    menyval = st.sidebar.radio("Meny", ["Visa bolag", "Lägg till bolag", "Redigera bolag"])
+    st.title("Aktieanalysapp")
 
-    if menyval == "Visa bolag":
+    meny = st.sidebar.radio("Välj vy", ["Visa bolag", "Lägg till nytt bolag", "Redigera bolag"])
+
+    if meny == "Visa bolag":
         visa_bolag_ett_i_taget()
-
-    elif menyval == "Lägg till bolag":
-        data = load_data()
+    elif meny == "Lägg till nytt bolag":
         nytt_bolag_formular(data)
-        save_data(data)
-
-    elif menyval == "Redigera bolag":
-        data = load_data()
+    elif meny == "Redigera bolag":
         redigeringsformular(data)
-        save_data(data)
 
 if __name__ == "__main__":
     main()
