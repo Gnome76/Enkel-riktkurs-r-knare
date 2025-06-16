@@ -1,83 +1,60 @@
 import streamlit as st
-from data_handler import save_data
 
 def nytt_bolag_formular(data):
-    st.subheader("Lägg till nytt bolag")
-
-    with st.form("nytt_bolag_form"):
+    st.write("### Lägg till nytt bolag")
+    with st.form(key="nytt_bolag_form"):
         namn = st.text_input("Bolagsnamn").strip()
-        nuvarande_kurs = st.number_input("Nuvarande kurs", min_value=0.0)
+        kurs = st.number_input("Nuvarande kurs", min_value=0.0, format="%.2f")
+        vinst_forra_aret = st.number_input("Vinst förra året", format="%.2f")
+        vinst_i_ar = st.number_input("Förväntad vinst i år", format="%.2f")
+        vinst_nasta_ar = st.number_input("Förväntad vinst nästa år", format="%.2f")
+        omsattning_forra_aret = st.number_input("Omsättning förra året", format="%.2f")
+        omsattningstillvaxt_ar = st.number_input("Omsättningstillväxt i år (%)", format="%.2f")
+        omsattningstillvaxt_nasta_ar = st.number_input("Omsättningstillväxt nästa år (%)", format="%.2f")
+        nuvarande_pe = st.number_input("Nuvarande P/E", min_value=0.0, format="%.2f")
+        pe1 = st.number_input("P/E 1", min_value=0.0, format="%.2f")
+        pe2 = st.number_input("P/E 2", min_value=0.0, format="%.2f")
+        pe3 = st.number_input("P/E 3", min_value=0.0, format="%.2f")
+        pe4 = st.number_input("P/E 4", min_value=0.0, format="%.2f")
+        nuvarande_ps = st.number_input("Nuvarande P/S", min_value=0.0, format="%.2f")
+        ps1 = st.number_input("P/S 1", min_value=0.0, format="%.2f")
+        ps2 = st.number_input("P/S 2", min_value=0.0, format="%.2f")
+        ps3 = st.number_input("P/S 3", min_value=0.0, format="%.2f")
+        ps4 = st.number_input("P/S 4", min_value=0.0, format="%.2f")
 
-        nuvarande_pe = st.number_input("Nuvarande P/E", min_value=0.0)
-        pe = [st.number_input(f"P/E {i+1}", min_value=0.0) for i in range(4)]
-
-        nuvarande_ps = st.number_input("Nuvarande P/S", min_value=0.0)
-        ps = [st.number_input(f"P/S {i+1}", min_value=0.0) for i in range(4)]
-
-        vinst_i_ar = st.number_input("Förväntad vinst i år", min_value=0.0)
-        vinst_nasta_ar = st.number_input("Förväntad vinst nästa år", min_value=0.0)
-
-        tillvaxt_i_ar = st.number_input("Omsättningstillväxt i år (%)", min_value=0.0) / 100
-        tillvaxt_nasta_ar = st.number_input("Omsättningstillväxt nästa år (%)", min_value=0.0) / 100
-
-        submit = st.form_submit_button("Spara bolag")
-
-        if submit and namn:
-            data[namn] = {
-                "nuvarande_kurs": nuvarande_kurs,
-                "nuvarande_pe": nuvarande_pe,
-                "pe": pe,
-                "nuvarande_ps": nuvarande_ps,
-                "ps": ps,
-                "vinst_i_ar": vinst_i_ar,
-                "vinst_nasta_ar": vinst_nasta_ar,
-                "tillvaxt_i_ar": tillvaxt_i_ar,
-                "tillvaxt_nasta_ar": tillvaxt_nasta_ar,
-            }
-            save_data(data)
-            st.success(f"{namn} har sparats.")
-
-def redigeringsformular(data):
-    st.subheader("Redigera bolag")
-
-    if not data:
-        st.info("Inga bolag att redigera ännu.")
-        return
-
-    val = st.selectbox("Välj bolag att redigera", list(data.keys()))
-
-    if not val:
-        return
-
-    bolag = data[val]
-
-    with st.form(f"redigera_{val}"):
-        nuvarande_kurs = st.number_input("Nuvarande kurs", value=bolag["nuvarande_kurs"], min_value=0.0)
-        nuvarande_pe = st.number_input("Nuvarande P/E", value=bolag["nuvarande_pe"], min_value=0.0)
-        pe = [st.number_input(f"P/E {i+1}", value=bolag["pe"][i], min_value=0.0) for i in range(4)]
-
-        nuvarande_ps = st.number_input("Nuvarande P/S", value=bolag["nuvarande_ps"], min_value=0.0)
-        ps = [st.number_input(f"P/S {i+1}", value=bolag["ps"][i], min_value=0.0) for i in range(4)]
-
-        vinst_i_ar = st.number_input("Förväntad vinst i år", value=bolag["vinst_i_ar"], min_value=0.0)
-        vinst_nasta_ar = st.number_input("Förväntad vinst nästa år", value=bolag["vinst_nasta_ar"], min_value=0.0)
-
-        tillvaxt_i_ar = st.number_input("Omsättningstillväxt i år (%)", value=bolag["tillvaxt_i_ar"] * 100, min_value=0.0)
-        tillvaxt_nasta_ar = st.number_input("Omsättningstillväxt nästa år (%)", value=bolag["tillvaxt_nasta_ar"] * 100, min_value=0.0)
-
-        submit = st.form_submit_button("Uppdatera bolag")
+        submit = st.form_submit_button("Lägg till bolag")
 
         if submit:
-            data[val] = {
-                "nuvarande_kurs": nuvarande_kurs,
-                "nuvarande_pe": nuvarande_pe,
-                "pe": pe,
-                "nuvarande_ps": nuvarande_ps,
-                "ps": ps,
-                "vinst_i_ar": vinst_i_ar,
-                "vinst_nasta_ar": vinst_nasta_ar,
-                "tillvaxt_i_ar": tillvaxt_i_ar / 100,
-                "tillvaxt_nasta_ar": tillvaxt_nasta_ar / 100,
-            }
-            save_data(data)
-            st.success(f"{val} har uppdaterats.")
+            # Debug-utskrifter
+            print(f"DEBUG: Typ av data: {type(data)}")
+            print(f"DEBUG: Innehåll i data (första 3 nycklar om möjligt): {list(data.keys())[:3] if isinstance(data, dict) else 'Ej dict'}")
+            print(f"DEBUG: Namn som ska läggas till: '{namn}' (typ: {type(namn)})")
+
+            if not namn:
+                st.error("Bolagsnamn kan inte vara tomt!")
+                return
+
+            try:
+                data[namn] = {
+                    "kurs": kurs,
+                    "vinst_forra_aret": vinst_forra_aret,
+                    "vinst_i_ar": vinst_i_ar,
+                    "vinst_nasta_ar": vinst_nasta_ar,
+                    "omsattning_forra_aret": omsattning_forra_aret,
+                    "omsattningstillvaxt_ar": omsattningstillvaxt_ar,
+                    "omsattningstillvaxt_nasta_ar": omsattningstillvaxt_nasta_ar,
+                    "nuvarande_pe": nuvarande_pe,
+                    "pe1": pe1,
+                    "pe2": pe2,
+                    "pe3": pe3,
+                    "pe4": pe4,
+                    "nuvarande_ps": nuvarande_ps,
+                    "ps1": ps1,
+                    "ps2": ps2,
+                    "ps3": ps3,
+                    "ps4": ps4,
+                }
+                st.success(f"Bolag '{namn}' tillagt!")
+            except Exception as e:
+                st.error(f"Något gick fel vid tillägg av bolag: {e}")
+                print(f"DEBUG: Fel vid data[namn] = ... : {e}")
