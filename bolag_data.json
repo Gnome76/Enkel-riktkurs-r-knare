@@ -1,1 +1,19 @@
-[]
+{
+  "A": {
+    "kurs": 0.01,
+    "pe_nuvarande": 0.01,
+    "pe_1": 0.01,
+    "pe_2": 0.01,
+    "pe_3": 0.01,
+    "pe_4": 0.01,
+    "ps_nuvarande": 0.01,
+    "ps_1": 0.01,
+    "ps_2": 0.01,
+    "ps_3": 0.01,
+    "ps_4": 0.01,
+    "vinst_i_ar": 0.01,
+    "vinst_nasta_ar": 0.01,
+    "oms_tillv_i_ar": 0.01,
+    "oms_tillv_nasta_ar": 0.01
+  }
+}
