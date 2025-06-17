@@ -1,47 +1,39 @@
 import streamlit as st
-from data_handler import load_data, save_data
-from forms import nytt_bolag_formular, redigeringsformular
-from view import visa_bolag_ett_i_taget
-import os
-import time
-
-def visa_debug_info():
-    st.header("🔍 Debug – Sparad data")
-
-    data = load_data()
-    st.subheader("📦 Data i bolag_data.json")
-    st.json(data)
-
-    try:
-        mod_time = os.path.getmtime("bolag_data.json")
-        readable_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mod_time))
-        st.write(f"🕒 Senast uppdaterad: {readable_time}")
-    except Exception as e:
-        st.warning("Kunde inte läsa filens ändringstid.")
-        st.error(str(e))
-
-    st.write(f"📊 Antal bolag: {len(data)}")
+from google_sheets_handler import load_data, save_data
 
 def main():
-    data = load_data()
+    st.title("Bolag - Läsa och Spara med Google Sheets")
 
-    st.title("📈 Aktieanalysapp")
+    sheet, data = load_data()
 
-    meny = st.sidebar.radio("Välj vy", [
-        "Visa bolag",
-        "Lägg till nytt bolag",
-        "Redigera bolag",
-        "Debug – Visa sparad data"
-    ])
+    # Visa befintliga bolag
+    st.subheader("Sparade bolag")
+    if data:
+        for i, bolag in enumerate(data):
+            st.write(f"{i+1}. {bolag}")
+    else:
+        st.write("Inga bolag sparade ännu.")
 
-    if meny == "Visa bolag":
-        visa_bolag_ett_i_taget(data)
-    elif meny == "Lägg till nytt bolag":
-        nytt_bolag_formular(data)
-    elif meny == "Redigera bolag":
-        redigeringsformular(data)
-    elif meny == "Debug – Visa sparad data":
-        visa_debug_info()
+    # Lägg till nytt bolag
+    st.subheader("Lägg till nytt bolag")
+    with st.form("nytt_bolag_form"):
+        namn = st.text_input("Bolagsnamn")
+        kurs = st.number_input("Kurs", min_value=0.0, format="%.4f")
+        pe_nuvarande = st.number_input("P/E nuvarande", min_value=0.0, format="%.4f")
+        # Du kan lägga till fler fält efter behov här...
+        submitted = st.form_submit_button("Lägg till bolag")
+
+    if submitted:
+        nytt_bolag = {
+            "namn": namn,
+            "kurs": kurs,
+            "pe_nuvarande": pe_nuvarande
+            # fler fält...
+        }
+        data.append(nytt_bolag)
+        save_data(sheet, data)
+        st.success(f"Bolaget {namn} sparades!")
+        st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
