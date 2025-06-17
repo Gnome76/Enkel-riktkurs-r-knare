@@ -1,22 +1,20 @@
 import streamlit as st
-from data_handler import load_data, save_data
+from data_handler import load_data
+from view import visa_bolag
 
 def main():
     st.title("Mina sparade bolag")
 
+    # Ladda data
     data = load_data()
-
-    # Felsökning – visa vad som laddats in
-    st.subheader("Debug – inläst data från data.json")
+    st.text("Debug – inläst data från data.json")
     st.json(data)
 
-    st.subheader("Sparade bolag:")
-    if not data:
-        st.info("Ingen data sparad ännu.")
+    # Visa bolag
+    if data:
+        visa_bolag(data)
     else:
-        for namn, info in data.items():
-            st.markdown(f"### {namn}")
-            st.write(info)
+        st.write("Ingen data sparad ännu.")
 
 if __name__ == "__main__":
     main()
