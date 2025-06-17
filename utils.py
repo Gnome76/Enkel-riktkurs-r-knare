@@ -1,24 +1,30 @@
-def berakna_undervarderingar(bolag: dict):
-    kurs = bolag.get("kurs", 1.0)
-    pe_tal = [bolag.get(f"pe_{i}", 0.0) for i in range(1, 5)]
-    ps_tal = [bolag.get(f"ps_{i}", 0.0) for i in range(1, 5)]
-    pe_nuvarande = bolag.get("pe_nuvarande", 1.0)
-    ps_nuvarande = bolag.get("ps_nuvarande", 1.0)
-    vinst_i_ar = bolag.get("vinst_i_ar", 0.01)
-    vinst_nasta_ar = bolag.get("vinst_nasta_ar", 0.01)
-    oms_tillv_i_ar = bolag.get("oms_tillv_i_ar", 0.01)
-    oms_tillv_nasta_ar = bolag.get("oms_tillv_nasta_ar", 0.01)
+def beräkna_targetkurser(bolag):
+    snitt_pe = (bolag["pe_1"] + bolag["pe_2"] + bolag["pe_3"] + bolag["pe_4"]) / 4
+    snitt_ps = (bolag["ps_1"] + bolag["ps_2"] + bolag["ps_3"] + bolag["ps_4"]) / 4
 
-    pe_snitt = sum(pe_tal) / len(pe_tal) if pe_tal else 0.0
-    ps_snitt = sum(ps_tal) / len(ps_tal) if ps_tal else 0.0
+    target_pe_i_ar = snitt_pe * bolag["vinst_i_ar"] * 0.9
+    target_pe_nasta_ar = snitt_pe * bolag["vinst_nasta_ar"] * 0.9
 
-    pe_target_i_ar = pe_snitt * vinst_i_ar * 0.9
-    pe_target_nasta_ar = pe_snitt * vinst_nasta_ar * 0.9
-    ps_target_i_ar = ps_snitt * oms_tillv_i_ar / ps_nuvarande * kurs * 0.9
-    ps_target_nasta_ar = ps_snitt * oms_tillv_i_ar * oms_tillv_nasta_ar / ps_nuvarande * kurs * 0.9
+    target_ps_i_ar = snitt_ps * bolag["oms_tillv_i_ar"] / bolag["ps_nuvarande"] * bolag["kurs"] * 0.9
+    target_ps_nasta_ar = snitt_ps * bolag["oms_tillv_i_ar"] * bolag["oms_tillv_nasta_ar"] / bolag["ps_nuvarande"] * bolag["kurs"] * 0.9
 
-    undervardering_pe = max(((pe_target_i_ar - kurs) / kurs) * 100, ((pe_target_nasta_ar - kurs) / kurs) * 100)
-    undervardering_ps = max(((ps_target_i_ar - kurs) / kurs) * 100, ((ps_target_nasta_ar - kurs) / kurs) * 100)
-    undervardering = max(undervardering_pe, undervardering_ps)
+    return {
+        "target_pe_i_ar": round(target_pe_i_ar, 2),
+        "target_pe_nasta_ar": round(target_pe_nasta_ar, 2),
+        "target_ps_i_ar": round(target_ps_i_ar, 2),
+        "target_ps_nasta_ar": round(target_ps_nasta_ar, 2)
+    }
 
-    return pe_target_i_ar, pe_target_nasta_ar, ps_target_i_ar, ps_target_nasta_ar, undervardering
+def beräkna_undervärdering(nuvarande_kurs, targetkurs):
+    if targetkurs <= 0:
+        return -100.0
+    return round((targetkurs - nuvarande_kurs) / targetkurs * 100, 1)
+
+def max_undervärdering(kurs, targets):
+    värderingar = [
+        beräkna_undervärdering(kurs, targets["target_pe_i_ar"]),
+        beräkna_undervärdering(kurs, targets["target_pe_nasta_ar"]),
+        beräkna_undervärdering(kurs, targets["target_ps_i_ar"]),
+        beräkna_undervärdering(kurs, targets["target_ps_nasta_ar"]),
+    ]
+    return round(max(värderingar), 1)
