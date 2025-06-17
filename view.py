@@ -1,5 +1,5 @@
 import streamlit as st
-from utils import berakna_targetkurser_och_undervardering
+from utils import berakna_targetkurser_och_undervardering, berakna_targetkurser_och_undervardering_enkel
 
 def visa_alla_bolag(data):
     st.header("Mina sparade bolag")
@@ -11,16 +11,15 @@ def visa_alla_bolag(data):
         return
 
     st.markdown("### Sparade bolag:")
-    for namn, info in data.items():
+    beraknade = berakna_targetkurser_och_undervardering(data)
+    for namn, info in beraknade.items():
         st.markdown(f"#### 📊 {namn}")
         st.write(f"Nuvarande kurs: {info['kurs']:.2f} kr")
-
-        resultat = berakna_targetkurser_och_undervardering(info)
-        st.write(f"🎯 Targetkurs P/E (i år): {resultat['target_pe_i_ar']:.2f} kr")
-        st.write(f"🎯 Targetkurs P/E (nästa år): {resultat['target_pe_nasta_ar']:.2f} kr")
-        st.write(f"🎯 Targetkurs P/S (i år): {resultat['target_ps_i_ar']:.2f} kr")
-        st.write(f"🎯 Targetkurs P/S (nästa år): {resultat['target_ps_nasta_ar']:.2f} kr")
-        st.write(f"📉 Undervärdering (max av P/E och P/S): {resultat['undervardering_procent']:.1f} %")
+        st.write(f"🎯 Targetkurs P/E (i år): {info['target_pe_i_ar']:.2f} kr")
+        st.write(f"🎯 Targetkurs P/E (nästa år): {info['target_pe_nasta_ar']:.2f} kr")
+        st.write(f"🎯 Targetkurs P/S (i år): {info['target_ps_i_ar']:.2f} kr")
+        st.write(f"🎯 Targetkurs P/S (nästa år): {info['target_ps_nasta_ar']:.2f} kr")
+        st.write(f"📉 Undervärdering (max av P/E och P/S): {info['undervardering_procent']:.1f} %")
 
 def visa_ett_bolag(data, bolagsnamn):
     info = data.get(bolagsnamn)
@@ -31,7 +30,7 @@ def visa_ett_bolag(data, bolagsnamn):
     st.markdown(f"## 📌 {bolagsnamn}")
     st.write(f"Nuvarande kurs: {info['kurs']:.2f} kr")
 
-    resultat = berakna_targetkurser_och_undervardering(info)
+    resultat = berakna_targetkurser_och_undervardering_enkel(info)
     st.write(f"🎯 Targetkurs P/E (i år): {resultat['target_pe_i_ar']:.2f} kr")
     st.write(f"🎯 Targetkurs P/E (nästa år): {resultat['target_pe_nasta_ar']:.2f} kr")
     st.write(f"🎯 Targetkurs P/S (i år): {resultat['target_ps_i_ar']:.2f} kr")
