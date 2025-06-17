@@ -2,37 +2,27 @@ import streamlit as st
 from utils import berakna_targetkurser_och_undervardering
 
 def visa_alla_bolag(data):
-    st.subheader("📊 Alla bolag")
-    for namn, info in data.items():
-        kurs = info.get("kurs", 0)
-        resultat = berakna_targetkurser_och_undervardering(info)
+    st.header("📋 Mina sparade bolag")
+    st.text("Debug – inläst data från data.json")
+    st.json(data)
 
-        st.markdown(f"### 📌 {namn}")
-        st.markdown(f"- Nuvarande kurs: **{kurs:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/E (i år): **{resultat['target_pe_i_ar']:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/E (nästa år): **{resultat['target_pe_nasta_ar']:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/S (i år): **{resultat['target_ps_i_ar']:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/S (nästa år): **{resultat['target_ps_nasta_ar']:.2f} kr**")
-        st.markdown(f"- 📉 Undervärdering (max av P/E och P/S): **{resultat['max_undervardering']:.1f} %**")
-        st.markdown("---")
-
-def visa_ett_bolag(data):
+def visa_ett_bolag(data, valt_bolag):
     if not data:
-        st.info("Ingen data att visa.")
+        st.info("Ingen data sparad ännu.")
+        return
+    if not valt_bolag or valt_bolag not in data:
+        st.info("Inget bolag valt.")
         return
 
-    bolagsnamn = list(data.keys())
-    valt_bolag = st.selectbox("Välj bolag att visa", bolagsnamn)
+    bolag = data[valt_bolag]
+    st.subheader(f"📊 {valt_bolag}")
 
-    if valt_bolag:
-        info = data[valt_bolag]
-        kurs = info.get("kurs", 0)
-        resultat = berakna_targetkurser_och_undervardering(info)
+    st.write(f"**Nuvarande kurs:** {bolag['kurs']:.2f} kr")
+    result = berakna_targetkurser_och_undervardering(bolag)
+    st.write(f"🎯 **Targetkurs P/E (i år):** {result['target_pe_i_ar']:.2f} kr")
+    st.write(f"🎯 **Targetkurs P/E (nästa år):** {result['target_pe_nasta_ar']:.2f} kr")
+    st.write(f"🎯 **Targetkurs P/S (i år):** {result['target_ps_i_ar']:.2f} kr")
+    st.write(f"🎯 **Targetkurs P/S (nästa år):** {result['target_ps_nasta_ar']:.2f} kr")
 
-        st.subheader(f"📊 {valt_bolag}")
-        st.markdown(f"- Nuvarande kurs: **{kurs:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/E (i år): **{resultat['target_pe_i_ar']:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/E (nästa år): **{resultat['target_pe_nasta_ar']:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/S (i år): **{resultat['target_ps_i_ar']:.2f} kr**")
-        st.markdown(f"- 🎯 Targetkurs P/S (nästa år): **{resultat['target_ps_nasta_ar']:.2f} kr**")
-        st.markdown(f"- 📉 Undervärdering (max av P/E och P/S): **{resultat['max_undervardering']:.1f} %**")
+    undervardering = result["undervardering_procent"]
+    st.write(f"📉 **Undervärdering (max av P/E och P/S):** {undervardering:.1f} %")
