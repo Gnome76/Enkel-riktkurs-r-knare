@@ -8,6 +8,5 @@ def load_data(filepath="data.json"):
         try:
             data = json.load(f)
         except json.JSONDecodeError:
-            # Om JSON är fel eller filen är tom, returnera tom dict
             return {}
     return data
