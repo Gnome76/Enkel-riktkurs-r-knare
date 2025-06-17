@@ -1,76 +1,24 @@
-def berakna_targetkurser(info):
-    try:
-        # Nuvarande värden
-        kurs = info.get("kurs", 0)
-        pe_nu = info.get("pe_nu", 0)
-        ps_nu = info.get("ps_nu", 0)
+def berakna_undervarderingar(bolag: dict):
+    kurs = bolag.get("kurs", 1.0)
+    pe_tal = [bolag.get(f"pe_{i}", 0.0) for i in range(1, 5)]
+    ps_tal = [bolag.get(f"ps_{i}", 0.0) for i in range(1, 5)]
+    pe_nuvarande = bolag.get("pe_nuvarande", 1.0)
+    ps_nuvarande = bolag.get("ps_nuvarande", 1.0)
+    vinst_i_ar = bolag.get("vinst_i_ar", 0.01)
+    vinst_nasta_ar = bolag.get("vinst_nasta_ar", 0.01)
+    oms_tillv_i_ar = bolag.get("oms_tillv_i_ar", 0.01)
+    oms_tillv_nasta_ar = bolag.get("oms_tillv_nasta_ar", 0.01)
 
-        # Vinst
-        vinst_1 = info.get("vinst_i_ar", 0)
-        vinst_2 = info.get("vinst_nasta_ar", 0)
+    pe_snitt = sum(pe_tal) / len(pe_tal) if pe_tal else 0.0
+    ps_snitt = sum(ps_tal) / len(ps_tal) if ps_tal else 0.0
 
-        # Tillväxt
-        tillvaxt_1 = info.get("oms_tillvaxt_i_ar", 0) / 100
-        tillvaxt_2 = info.get("oms_tillvaxt_nasta_ar", 0) / 100
+    pe_target_i_ar = pe_snitt * vinst_i_ar * 0.9
+    pe_target_nasta_ar = pe_snitt * vinst_nasta_ar * 0.9
+    ps_target_i_ar = ps_snitt * oms_tillv_i_ar / ps_nuvarande * kurs * 0.9
+    ps_target_nasta_ar = ps_snitt * oms_tillv_i_ar * oms_tillv_nasta_ar / ps_nuvarande * kurs * 0.9
 
-        # P/E-data
-        pe_tal = [info.get(f"pe_{i}", 0) for i in range(1, 5)]
-        pe_snitt = sum(pe_tal) / len(pe_tal) if pe_tal else 0
-        pe_snitt *= 0.9  # säkerhetsmarginal 10 %
+    undervardering_pe = max(((pe_target_i_ar - kurs) / kurs) * 100, ((pe_target_nasta_ar - kurs) / kurs) * 100)
+    undervardering_ps = max(((ps_target_i_ar - kurs) / kurs) * 100, ((ps_target_nasta_ar - kurs) / kurs) * 100)
+    undervardering = max(undervardering_pe, undervardering_ps)
 
-        # P/S-data
-        ps_tal = [info.get(f"ps_{i}", 0) for i in range(1, 5)]
-        ps_snitt = sum(ps_tal) / len(ps_tal) if ps_tal else 0
-        ps_snitt *= 0.9  # säkerhetsmarginal 10 %
-
-        # Target P/E
-        target_pe_1 = pe_snitt * vinst_1
-        target_pe_2 = pe_snitt * vinst_2
-
-        # Target P/S
-        target_ps_1 = ps_snitt * tillvaxt_1 * kurs / ps_nu if ps_nu > 0 else 0
-        target_ps_2 = ps_snitt * tillvaxt_1 * tillvaxt_2 * kurs / ps_nu if ps_nu > 0 else 0
-
-        # Undervärdering i %
-        underv_pe_1 = ((target_pe_1 - kurs) / kurs) * 100 if kurs > 0 else 0
-        underv_pe_2 = ((target_pe_2 - kurs) / kurs) * 100 if kurs > 0 else 0
-
-        underv_ps_1 = ((target_ps_1 - kurs) / kurs) * 100 if kurs > 0 else 0
-        underv_ps_2 = ((target_ps_2 - kurs) / kurs) * 100 if kurs > 0 else 0
-
-        # Köpvärd nivå = targetkurs minus 30 %
-        kopvard_pe_1 = target_pe_1 * 0.7
-        kopvard_pe_2 = target_pe_2 * 0.7
-        kopvard_ps_1 = target_ps_1 * 0.7
-        kopvard_ps_2 = target_ps_2 * 0.7
-
-        return {
-            "target_pe_1": round(target_pe_1, 2),
-            "target_pe_2": round(target_pe_2, 2),
-            "target_ps_1": round(target_ps_1, 2),
-            "target_ps_2": round(target_ps_2, 2),
-            "underv_pe_1": round(underv_pe_1, 1),
-            "underv_pe_2": round(underv_pe_2, 1),
-            "underv_ps_1": round(underv_ps_1, 1),
-            "underv_ps_2": round(underv_ps_2, 1),
-            "kopvard_pe_1": round(kopvard_pe_1, 2),
-            "kopvard_pe_2": round(kopvard_pe_2, 2),
-            "kopvard_ps_1": round(kopvard_ps_1, 2),
-            "kopvard_ps_2": round(kopvard_ps_2, 2),
-        }
-
-    except Exception as e:
-        return {
-            "target_pe_1": 0,
-            "target_pe_2": 0,
-            "target_ps_1": 0,
-            "target_ps_2": 0,
-            "underv_pe_1": 0,
-            "underv_pe_2": 0,
-            "underv_ps_1": 0,
-            "underv_ps_2": 0,
-            "kopvard_pe_1": 0,
-            "kopvard_pe_2": 0,
-            "kopvard_ps_1": 0,
-            "kopvard_ps_2": 0,
-        }
+    return pe_target_i_ar, pe_target_nasta_ar, ps_target_i_ar, ps_target_nasta_ar, undervardering
