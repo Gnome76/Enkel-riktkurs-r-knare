@@ -1,36 +1,30 @@
 def berakna_targetkurser_och_undervardering(info):
-    kurs = info.get("kurs", 0)
-    pe_nuvarande = info.get("pe_nuvarande", 1)
-    ps_nuvarande = info.get("ps_nuvarande", 1)
+    kurs = info["kurs"]
+    vinst_i_ar = info["vinst_i_ar"]
+    vinst_nasta_ar = info["vinst_nasta_ar"]
+    oms_tillv_i_ar = info["oms_tillv_i_ar"]
+    oms_tillv_nasta_ar = info["oms_tillv_nasta_ar"]
 
-    pe_lista = [info.get(f"pe_{i}", 0) for i in range(1, 5)]
-    ps_lista = [info.get(f"ps_{i}", 0) for i in range(1, 5)]
+    snitt_pe = sum([info[f"pe_{i}"] for i in range(1, 5)]) / 4
+    snitt_ps = sum([info[f"ps_{i}"] for i in range(1, 5)]) / 4
+    pe_nuv = info["pe_nuvarande"]
+    ps_nuv = info["ps_nuvarande"]
 
-    pe_snitt = sum(pe_lista) / len(pe_lista) if pe_lista else 0
-    ps_snitt = sum(ps_lista) / len(ps_lista) if ps_lista else 0
+    # Targetkurser med 10 % säkerhetsmarginal
+    target_pe_i_ar = snitt_pe * vinst_i_ar * 0.9
+    target_pe_nasta_ar = snitt_pe * vinst_nasta_ar * 0.9
 
-    vinst_i_ar = info.get("vinst_i_ar", 0)
-    vinst_nasta_ar = info.get("vinst_nasta_ar", 0)
+    target_ps_i_ar = snitt_ps * oms_tillv_i_ar / ps_nuv * kurs * 0.9
+    target_ps_nasta_ar = snitt_ps * oms_tillv_i_ar * oms_tillv_nasta_ar / ps_nuv * kurs * 0.9
 
-    oms_tillv_i_ar = info.get("oms_tillv_i_ar", 1)
-    oms_tillv_nasta_ar = info.get("oms_tillv_nasta_ar", 1)
-
-    # Target P/E
-    target_pe_i_ar = pe_snitt * vinst_i_ar * 0.9
-    target_pe_nasta_ar = pe_snitt * vinst_nasta_ar * 0.9
-
-    # Target P/S
-    target_ps_i_ar = ps_snitt * oms_tillv_i_ar / ps_nuvarande * kurs * 0.9 if ps_nuvarande else 0
-    target_ps_nasta_ar = ps_snitt * oms_tillv_i_ar * oms_tillv_nasta_ar / ps_nuvarande * kurs * 0.9 if ps_nuvarande else 0
-
-    # Undervärdering
-    max_target = max(target_pe_i_ar, target_pe_nasta_ar, target_ps_i_ar, target_ps_nasta_ar)
-    undervardering = ((max_target - kurs) / kurs) * 100 if kurs else 0
+    undervardering_pe = (target_pe_nasta_ar - kurs) / kurs
+    undervardering_ps = (target_ps_nasta_ar - kurs) / kurs
+    max_undervardering = max(undervardering_pe, undervardering_ps) * 100
 
     return {
         "target_pe_i_ar": target_pe_i_ar,
         "target_pe_nasta_ar": target_pe_nasta_ar,
         "target_ps_i_ar": target_ps_i_ar,
         "target_ps_nasta_ar": target_ps_nasta_ar,
-        "max_undervardering": undervardering
+        "undervardering_procent": max_undervardering
     }
