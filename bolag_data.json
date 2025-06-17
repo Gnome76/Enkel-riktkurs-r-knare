@@ -1,4 +1,8 @@
-{
+import streamlit as st
+import json
+
+# Exempeldata
+data = {
   "A": {
     "kurs": 0.01,
     "pe_nuvarande": 0.01,
@@ -17,3 +21,10 @@
     "oms_tillv_nasta_ar": 0.01
   }
 }
+
+st.write("Sparade bolag:")
+# Visa som snyggt JSON
+st.json(data)
+
+# Eller om du vill visa som text med indrag:
+st.text(json.dumps(data, indent=2, ensure_ascii=False))
