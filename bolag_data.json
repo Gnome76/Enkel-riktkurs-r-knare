@@ -1,19 +1,19 @@
 {
   "A": {
-    "kurs": 0.01,
-    "pe_nuvarande": 0.01,
-    "pe_1": 0.01,
-    "pe_2": 0.01,
-    "pe_3": 0.01,
-    "pe_4": 0.01,
-    "ps_nuvarande": 0.01,
-    "ps_1": 0.01,
-    "ps_2": 0.01,
-    "ps_3": 0.01,
-    "ps_4": 0.01,
-    "vinst_i_ar": 0.01,
-    "vinst_nasta_ar": 0.01,
-    "oms_tillv_i_ar": 0.01,
-    "oms_tillv_nasta_ar": 0.01
+    "kurs": 100,
+    "pe_nuvarande": 15,
+    "pe_1": 20,
+    "pe_2": 18,
+    "pe_3": 19,
+    "pe_4": 21,
+    "ps_nuvarande": 3,
+    "ps_1": 4,
+    "ps_2": 4.5,
+    "ps_3": 4.2,
+    "ps_4": 4.1,
+    "vinst_i_ar": 5,
+    "vinst_nasta_ar": 6,
+    "oms_tillv_i_ar": 1.1,
+    "oms_tillv_nasta_ar": 1.2
   }
 }
