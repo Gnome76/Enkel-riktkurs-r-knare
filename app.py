@@ -1,9 +1,14 @@
+import streamlit as st
 from data_handler import load_data
 
 def main():
+    st.title("Mina sparade bolag")
     data = load_data()
-    print("Data loaded:", data)
-    # Här kan du lägga till mer kod, t.ex. Streamlit eller vad du vill göra med datan
+    
+    if data:
+        st.json(data)  # Visar hela JSON-datan snyggt
+    else:
+        st.write("Ingen data sparad ännu.")
 
 if __name__ == "__main__":
     main()
