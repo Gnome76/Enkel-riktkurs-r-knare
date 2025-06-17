@@ -1,74 +1,61 @@
 import streamlit as st
-from data_handler import load_data
-from utils import beräkna_targetkurser, beräkna_undervärdering
+from utils import berakna_targetkurser
 
-def visa_bolag_ett_i_taget():
-    data = load_data()
-    
+def visa_bolag_ett_i_taget(data):
+    st.header("Undervärderade bolag")
+
     if not data:
-        st.info("Inga bolag tillgängliga att visa ännu.")
+        st.info("Inga bolag tillgängliga.")
         return
 
-    bolagslista = list(data.keys())
+    # Filtrera bolag med minst 30 % rabatt
+    undervarderade = {}
+    for namn, info in data.items():
+        try:
+            result = berakna_targetkurser(info)
+            rabatt_pe_nasta = result["undervärdering_pe_nasta"]
+            rabatt_ps_nasta = result["undervärdering_ps_nasta"]
 
-    if "val_index" not in st.session_state:
-        st.session_state["val_index"] = 0
+            if rabatt_pe_nasta >= 30 or rabatt_ps_nasta >= 30:
+                undervarderade[namn] = (info, result)
+        except Exception:
+            continue
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("⬅️ Föregående", use_container_width=True):
-            st.session_state["val_index"] = (st.session_state["val_index"] - 1) % len(bolagslista)
-    with col2:
-        if st.button("Nästa ➡️", use_container_width=True):
-            st.session_state["val_index"] = (st.session_state["val_index"] + 1) % len(bolagslista)
+    if not undervarderade:
+        st.warning("Inga undervärderade bolag hittades.")
+        return
 
-    valt_bolag = bolagslista[st.session_state["val_index"]]
-    info = data[valt_bolag]
+    bolagslista = list(undervarderade.items())
+    index = st.session_state.get("bolags_index", 0)
 
-    st.subheader(valt_bolag)
-    st.write(f"**Nuvarande kurs:** {info.get('nuvarande_kurs', 'saknas')} kr")
+    if index >= len(bolagslista):
+        index = 0
+        st.session_state["bolags_index"] = 0
 
-    # Targetkurser P/E
-    result_pe = beräkna_targetkurser(info, metod="pe")
-    if result_pe:
-        target_pe_i_ar, target_pe_nasta = result_pe
-        st.write(f"**Targetkurs P/E:** {target_pe_i_ar:.1f} kr / {target_pe_nasta:.1f} kr")
-    else:
-        target_pe_i_ar = target_pe_nasta = None
-        st.warning("⚠️ Kunde inte räkna ut targetkurs för P/E.")
+    namn, (info, result) = bolagslista[index]
 
-    # Targetkurser P/S
-    result_ps = beräkna_targetkurser(info, metod="ps")
-    if result_ps:
-        target_ps_i_ar, target_ps_nasta = result_ps
-        st.write(f"**Targetkurs P/S:** {target_ps_i_ar:.1f} kr / {target_ps_nasta:.1f} kr")
-    else:
-        target_ps_i_ar = target_ps_nasta = None
-        st.warning("⚠️ Kunde inte räkna ut targetkurs för P/S.")
+    st.subheader(namn)
 
-    # Undervärdering P/E
-    result_pe_underv = beräkna_undervärdering(info, metod="pe")
-    if result_pe_underv:
-        underv_pe_i_ar, underv_pe_nasta = result_pe_underv
-        st.write(f"**Undervärdering P/E:** {underv_pe_i_ar:.0f}% / {underv_pe_nasta:.0f}%")
-    else:
-        st.warning("⚠️ Kunde inte räkna ut undervärdering för P/E.")
+    st.markdown(f"**Nuvarande kurs:** {info.get('kurs', 0):.2f} kr")
 
-    # Undervärdering P/S
-    result_ps_underv = beräkna_undervärdering(info, metod="ps")
-    if result_ps_underv:
-        underv_ps_i_ar, underv_ps_nasta = result_ps_underv
-        st.write(f"**Undervärdering P/S:** {underv_ps_i_ar:.0f}% / {underv_ps_nasta:.0f}%")
-    else:
-        st.warning("⚠️ Kunde inte räkna ut undervärdering för P/S.")
+    st.markdown("**🎯 Targetkurser (med 10% säkerhetsmarginal):**")
+    st.markdown(f"- P/E i år: {result['target_pe_iaar']:.2f} kr")
+    st.markdown(f"- P/E nästa år: {result['target_pe_nasta']:.2f} kr")
+    st.markdown(f"- P/S i år: {result['target_ps_iaar']:.2f} kr")
+    st.markdown(f"- P/S nästa år: {result['target_ps_nasta']:.2f} kr")
 
-    # Köpvärda nivåer med säkerhetsmarginal (-30%)
-    st.markdown("### 💰 Köpvärd nivå (-30%)")
-    if target_pe_i_ar:
-        st.write(f"- P/E i år: {target_pe_i_ar * 0.7:.1f} kr")
-    if target_pe_nasta:
-        st.write(f"- P/E nästa år: {target_pe_nasta * 0.7:.1f} kr")
-    if target_ps_i_ar:
-        st.write(f"- P/S i år: {target_ps_i_ar * 0.7:.1f} kr")
-    if target_ps_nasta:
-        st.write(f"- P/S nästa år: {target_ps_nasta * 0.7:.1f} kr")
+    st.markdown("**📉 Undervärdering:**")
+    st.markdown(f"- P/E: {result['undervärdering_pe_nasta']:.1f}%")
+    st.markdown(f"- P/S: {result['undervärdering_ps_nasta']:.1f}%")
+
+    st.markdown("**🛒 Köpvärd vid:**")
+    st.markdown(f"- P/E (30% rabatt): {result['target_pe_nasta'] * 0.7:.2f} kr")
+    st.markdown(f"- P/S (30% rabatt): {result['target_ps_nasta'] * 0.7:.2f} kr")
+
+    col1, col2 = st.columns(2)
+    if col1.button("Föregående"):
+        st.session_state["bolags_index"] = (index - 1) % len(bolagslista)
+        st.experimental_rerun()
+    if col2.button("Nästa"):
+        st.session_state["bolags_index"] = (index + 1) % len(bolagslista)
+        st.experimental_rerun()
