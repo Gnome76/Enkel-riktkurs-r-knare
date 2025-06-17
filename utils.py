@@ -1,41 +1,36 @@
-def berakna_targetkurser_och_undervardering(data):
-    resultat = {}
-    for bolag, info in data.items():
-        kurs = info.get("kurs", 0.0)
+def berakna_targetkurser_och_undervardering(info):
+    kurs = info.get("kurs", 0)
+    pe_nuvarande = info.get("pe_nuvarande", 1)
+    ps_nuvarande = info.get("ps_nuvarande", 1)
 
-        # Vinst
-        vinst_i_ar = info.get("vinst_i_ar", 0.0)
-        vinst_nasta_ar = info.get("vinst_nasta_ar", 0.0)
+    pe_lista = [info.get(f"pe_{i}", 0) for i in range(1, 5)]
+    ps_lista = [info.get(f"ps_{i}", 0) for i in range(1, 5)]
 
-        # Omsättningstillväxt
-        tillv_i_ar = info.get("oms_tillv_i_ar", 1.0)
-        tillv_nasta_ar = info.get("oms_tillv_nasta_ar", 1.0)
+    pe_snitt = sum(pe_lista) / len(pe_lista) if pe_lista else 0
+    ps_snitt = sum(ps_lista) / len(ps_lista) if ps_lista else 0
 
-        # PE-siffror
-        pe_nuvarande = info.get("pe_nuvarande", 1.0)
-        pe_snitt = sum([info.get(f"pe_{i}", 0.0) for i in range(1, 5)]) / 4
+    vinst_i_ar = info.get("vinst_i_ar", 0)
+    vinst_nasta_ar = info.get("vinst_nasta_ar", 0)
 
-        # PS-siffror
-        ps_nuvarande = info.get("ps_nuvarande", 1.0)
-        ps_snitt = sum([info.get(f"ps_{i}", 0.0) for i in range(1, 5)]) / 4
+    oms_tillv_i_ar = info.get("oms_tillv_i_ar", 1)
+    oms_tillv_nasta_ar = info.get("oms_tillv_nasta_ar", 1)
 
-        # Targetkurser
-        target_pe_i_ar = pe_snitt * vinst_i_ar * 0.9
-        target_pe_nasta_ar = pe_snitt * vinst_nasta_ar * 0.9
+    # Target P/E
+    target_pe_i_ar = pe_snitt * vinst_i_ar * 0.9
+    target_pe_nasta_ar = pe_snitt * vinst_nasta_ar * 0.9
 
-        target_ps_i_ar = ps_snitt * tillv_i_ar / ps_nuvarande * kurs * 0.9
-        target_ps_nasta_ar = ps_snitt * tillv_i_ar * tillv_nasta_ar / ps_nuvarande * kurs * 0.9
+    # Target P/S
+    target_ps_i_ar = ps_snitt * oms_tillv_i_ar / ps_nuvarande * kurs * 0.9 if ps_nuvarande else 0
+    target_ps_nasta_ar = ps_snitt * oms_tillv_i_ar * oms_tillv_nasta_ar / ps_nuvarande * kurs * 0.9 if ps_nuvarande else 0
 
-        # Undervärdering i procent jämfört med högsta target
-        max_target = max(target_pe_i_ar, target_pe_nasta_ar, target_ps_i_ar, target_ps_nasta_ar)
-        undervardering = (max_target - kurs) / kurs * 100
+    # Undervärdering
+    max_target = max(target_pe_i_ar, target_pe_nasta_ar, target_ps_i_ar, target_ps_nasta_ar)
+    undervardering = ((max_target - kurs) / kurs) * 100 if kurs else 0
 
-        resultat[bolag] = {
-            "target_pe_i_ar": target_pe_i_ar,
-            "target_pe_nasta_ar": target_pe_nasta_ar,
-            "target_ps_i_ar": target_ps_i_ar,
-            "target_ps_nasta_ar": target_ps_nasta_ar,
-            "undervardering_procent": undervardering,
-        }
-
-    return resultat
+    return {
+        "target_pe_i_ar": target_pe_i_ar,
+        "target_pe_nasta_ar": target_pe_nasta_ar,
+        "target_ps_i_ar": target_ps_i_ar,
+        "target_ps_nasta_ar": target_ps_nasta_ar,
+        "max_undervardering": undervardering
+    }
